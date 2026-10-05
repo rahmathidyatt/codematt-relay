@@ -1,7 +1,7 @@
 {
   "name": "codematt-relay",
-  "version": "0.2.0",
-  "description": "codematt Relay \u2014 contacts, consent and safe imports",
+  "version": "0.3.0",
+  "description": "codematt Relay \u2014 templates, audiences and campaign drafts",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",

@@ -18,3 +18,14 @@ it('serves the real local API, persists edits, and rejects foreign-origin writes
   const summary=await(await fetch(base+'/__demo/api/dashboard')).json();expect(summary.data.contacts).toBe(1);
   const rejected=await fetch(base+'/__demo/api/reset',{method:'POST',headers:{Origin:'https://foreign.example','Content-Type':'application/json'},body:'{"confirmed":true}'});expect(rejected.status).toBe(403);
 },30000);
+
+it('exercises template samples and persistent draft APIs without any provider call',async()=>{
+ const headers={Origin:base,'Content-Type':'application/json'};
+ const sync=await fetch(base+'/__demo/api/templates/sync',{method:'POST',headers});expect(sync.status).toBe(200);
+ const templates=await(await fetch(base+'/__demo/api/templates')).json();expect(templates.data.demo).toBe(true);expect(templates.data.items).toHaveLength(4);
+ const id=crypto.randomUUID();const input={id,name:'HTTP draft',template_id:null,audience_rules:{mode:'all',tags:[],ids:[],match:'any',q:''},variable_mapping:{}};
+ const created=await fetch(base+'/__demo/api/campaigns',{method:'POST',headers,body:JSON.stringify(input)});expect(created.status).toBe(200);
+ const reopened=await(await fetch(base+'/__demo/api/campaigns/'+id)).json();expect(reopened.data.name).toBe('HTTP draft');
+ const summary=await(await fetch(base+'/__demo/api/dashboard')).json();expect(summary.data.campaigns).toBe(1);expect(summary.data.templates).toBe(4);
+ const send=await fetch(base+'/__demo/api/campaigns/send',{method:'POST',headers});expect(send.status).toBe(404);
+},30000);

@@ -45,6 +45,13 @@ describe('API trust boundaries', () => {
     const response=await handler(new Request('https://relay.example/api/contacts',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:'{}'}));
     expect(response.status).toBe(403);expect(mocks.getDatabase).not.toHaveBeenCalled();
   });
+  it('denies viewer campaign data and operator template sync before touching database', async () => {
+    mocks.getUser.mockResolvedValue({id:'v',roles:['viewer']});
+    for(const route of ['campaigns','templates','campaigns/preview'])expect((await handler(new Request('https://relay.example/api/'+route))).status).toBe(403);
+    mocks.getUser.mockResolvedValue({id:'o',roles:['operator']});
+    expect((await handler(new Request('https://relay.example/api/templates/sync',{method:'POST',headers:{Origin:'https://relay.example'}}))).status).toBe(403);
+    expect(mocks.getDatabase).not.toHaveBeenCalled();
+  });
   it('restricts writes and settings by role', () => {
     expect(can(['viewer'],'contacts:write')).toBe(false);
     expect(can(['operator'],'settings:read')).toBe(false);

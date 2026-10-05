@@ -1,6 +1,6 @@
 # codematt Relay — architecture and phased delivery
 
-Status: Phase 2 contacts and imports implemented. Campaign delivery is not yet implemented.
+Status: Phase 3 templates and campaign drafts implemented. Campaign delivery is not yet implemented.
 
 ## Boundaries
 One Netlify site represents one workspace. Every signed-in user must have a trusted Identity role: admin, operator, or viewer. Unknown roles have no access. Multi-workspace hosting requires a separate tenant isolation design before implementation. Credentials stay in Functions environment variables; there is no public registration UI. Identity must be configured Invite Only at the provider.
@@ -35,7 +35,7 @@ STOP, UNSUBSCRIBE, BERHENTI inbound events will revoke consent transactionally. 
 | /settings | /api/settings | 1 read-only; 5 updates |
 | /contacts | /api/contacts, /api/tags, /api/imports | 2 |
 | /templates | /api/templates, /api/templates/sync | 3 |
-| /campaigns/new | /api/campaigns | 3 |
+| /campaigns (draft dialog) | /api/campaigns, /api/campaigns/:id, /api/campaigns/preview | 3 |
 | /campaigns/:id | /api/campaigns/:id/{launch,pause,resume,cancel} | 4 |
 | /analytics | /api/analytics, /api/exports | 5 |
 | provider only | /api/webhooks/whatsapp | 4 |
@@ -70,3 +70,11 @@ Netlify Database requires a credit-based plan. Async Workloads requires enabling
 - Table data is paginated in the database; exports use 500-row UUID cursor pages and a creation cutoff. Export is capped at 10,000 contacts. It is not a repeatable-read snapshot across requests: concurrent edits may appear in later pages. Formula-like CSV cells are escaped.
 - Demo routes exist only inside Vite development middleware and only accept loopback Host with same-origin mutation requests. Data is in .demo-data, isolated from Netlify. E2E uses .demo-test-data. Both are excluded from Git and delivery ZIP.
 - Initial segment support is tag + consent + archive filtering. Saved named segments are not included. Tags are normalized lowercase and limited to 20 per contact. Tag filter suggestions are capped at 100 and narrowed by typed input.
+
+## Phase 3 decisions
+- Sync uses a server-only bearer token and fixed Graph host; only cursor values are reused from provider pagination. Complete fetch and database changes are all-or-nothing under a singleton sync-row lock. Failed sync leaves the cache unchanged; missing entries become UNAVAILABLE only after full success. Current WABA provenance, APPROVED status, supported components and a 24-hour freshness limit determine builder usability.
+- Shared workspace drafts use optimistic integer versions. The name is required, while missing template/variables are allowed until review. Draft snapshots record template content and currently eligible contact IDs/counts, but preview always re-reads current records. No recipients or outbox entries are created in Phase 3.
+- Audience rules support all, tag/search segment, or manual IDs. Exclusive skip counts prioritize archive, opt-out, missing consent, then invalid phone. Matching audience is capped at 10,000 before exclusions; manual IDs are deduplicated/capped at 1,000.
+- Text header/body positional and named placeholders are scoped by component. Footer is static; common static buttons are display-only. Unsupported media/dynamic/OTP/complex formats remain visible in the catalogue with reasons.
+- Production templates/drafts require admin or operator, synchronization requires admin, and viewer sees aggregate dashboard only. Same-origin, request size and existing persistent per-actor rate guards apply.
+- Draft creation uses a client UUID so an uncertain response can be reconciled by reopening the existing draft rather than generating a new one. A repeated create cannot overwrite an existing record.

@@ -1,10 +1,10 @@
-# codematt Relay — Phase 2
+# codematt Relay — Phase 3
 
 Send clearly. Reach responsibly.
 
-Phase 2 provides contact management, consent evidence/history, tag filters, CSV/XLSX import, archive/restore, filtered CSV exports and a persistent local demo. It includes Phase 1 authentication, database and dashboard foundations. Campaigns, WhatsApp sending, webhook, scheduling and delivery analytics are future phases. **No real message can be sent by this release.**
+Phase 2 provides contact management, consent evidence/history, tag filters, CSV/XLSX import, archive/restore, filtered CSV exports and a persistent local demo. It includes Phase 1 authentication, database and dashboard foundations. Phase 3 adds official template synchronization, audience selection, variable mapping, personalized preview and persistent campaign drafts. WhatsApp sending, webhook, scheduling and delivery analytics are future phases. **No real message can be sent by this release.**
 
-Indonesian VS Code and upgrade instructions: **[docs/PHASE-2-GUIDE-ID.md](docs/PHASE-2-GUIDE-ID.md)**.
+Indonesian VS Code and upgrade instructions: **[docs/PHASE-3-GUIDE-ID.md](docs/PHASE-3-GUIDE-ID.md)** (Phase 2 contact/import guide is also included)..
 
 ## Quick start
 
@@ -15,11 +15,15 @@ npm ci
 npm run dev
 ```
 
-Open the printed loopback URL, select **Lihat preview lokal**, then **Contacts**. Demo data persists in `.demo-data` on this computer. Use synthetic records; this unauthenticated developer preview is restricted to loopback requests and is not an operational shared server. Do not expose the Vite server or use a reverse proxy to share it. Demo code is not mounted by a production build. The production UI has no demo button or fallback that bypasses Identity.
+Open the printed loopback URL, select **Lihat preview lokal**, then **Templates → Muat template contoh** and **Campaigns → Buat campaign**. Create a synthetic contact with consent evidence in Contacts to try personalized previews. Demo data persists in `.demo-data` on this computer. Use synthetic records; this unauthenticated developer preview is restricted to loopback requests and is not an operational shared server. Do not expose the Vite server or use a reverse proxy to share it. Demo code is not mounted by a production build. The production UI has no demo button or fallback that bypasses Identity.
 
 Example imports are in `examples/`. All example names/numbers are test data with unknown consent, not real authorized recipients. Database contents and uploaded source files are not bundled.
 
 ## Implemented
+
+- Official Meta template sync with provider status, provenance, complete-result atomic updates, bounded cursor pagination and supported-component validation. Only admins can sync; credentials stay on the server.
+- Template catalogue/details and explicit sample data for local demo. No fake approval in production.
+- Campaign drafts with all/segment/manual audience, eligibility counts, named/positional variable mapping, personalized previews, version conflict protection and persistence. No sending or scheduling.
 
 - Contact creation and name/tag editing, normalization to E.164 with libphonenumber-js, duplicate number protection.
 - Database pagination, name/phone search, tag/consent/archive filtering and sorting.
@@ -51,8 +55,13 @@ React / TypeScript / Vite / Tailwind + Netlify Functions + Netlify Identity + Ne
 | /api/imports | POST | Admin / operator |
 | /api/imports/:id | GET | Creating actor only |
 | /api/imports/:id/chunks | POST | Creating actor only |
+| /api/templates | GET | Admin / operator |
+| /api/templates/sync | POST | Admin |
+| /api/campaigns | GET, POST (save draft) | Admin / operator |
+| /api/campaigns/:id | GET | Admin / operator |
+| /api/campaigns/preview | POST | Admin / operator |
 
-All production contact/import routes first verify Identity and trusted roles. Mutation requests require a matching Origin and JSON Content-Type. Body limit is 256 KiB and rate limit is 180 contact requests per minute per actor. No secrets or raw source files are logged. Responses are not cached. Unknown API routes return JSON 404.
+All production contact/import/template/campaign routes first verify Identity and trusted roles. Mutation requests require a matching Origin and JSON Content-Type. Body limit is 256 KiB and rate limit is 180 contact/template/campaign requests per minute per actor. No secrets or raw source files are logged. Responses are not cached. Unknown API routes return JSON 404.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for tables and future delivery design, and [docs/REQUIREMENTS.txt](docs/REQUIREMENTS.txt) for the original specification.
 
@@ -73,18 +82,19 @@ Netlify Database requires a compatible credit-based plan. Cloud account configur
 
 ## Database migrations
 
-Keep both migrations under `netlify/database/migrations/`:
+Keep all three migrations under `netlify/database/migrations/`:
 
 1. `0001_foundation.sql` — unchanged Phase 1 schema.
 2. `0002_contacts_imports.sql` — contact versions, import batch results/counters, rate buckets and indexes.
+3. `0003_campaign_drafts.sql` — template provenance/sync state, audience rules and draft versions.
 
 Netlify's native migration lifecycle applies pending files. Do not run already-applied migrations manually or edit their contents after use. Test the deployment against a preview database before production. Local demo creates/applies these migrations automatically in its own directory; tests execute them with PGlite. Managed Netlify PostgreSQL remains a separate deployment smoke test.
 
 ## Environment and secrets
 
-`.env.example` retains future server-only Meta placeholders. Nothing in Phase 2 uses a Meta token or sends a message, even if `WHATSAPP_SEND_ENABLED` is set true. Keep it false. Never prefix credentials with VITE_, commit `.env`, or place credentials in browser storage. Use Netlify Functions runtime environment variables when the actual integration phase is implemented.
+`.env.example` declares server-only Meta credentials. Phase 3 uses the access token, business account ID and explicit API version to read templates only. It never sends a message, even if `WHATSAPP_SEND_ENABLED` is set true. Keep it false. Never prefix credentials with VITE_, commit `.env`, or place credentials in browser storage. Use Netlify Functions runtime environment variables for real synchronization; local demo always uses samples.
 
-| Variable | Future purpose |
+| Variable | Purpose |
 | --- | --- |
 | WHATSAPP_SEND_ENABLED | Explicit production send gate; false now |
 | WHATSAPP_ACCESS_TOKEN | Official Cloud API token |
@@ -124,8 +134,8 @@ netlify deploy --build
 
 Review the draft, configure Identity/Database, and verify the integration before intentionally publishing with `netlify deploy --build --prod`. No publishing has been done on your behalf.
 
-Required cloud smoke checks: anonymous API access is rejected; viewer contact access is forbidden; admin/operator can create/edit/import; cross-origin mutations are rejected; the second migration applies; auth invite/login/recovery work; a duplicate import preserves opt-out; page reload routes work. Passing local checks is not proof these cloud checks passed.
+Required cloud smoke checks: anonymous API access is rejected; viewer contact access is forbidden; admin/operator can create/edit/import; cross-origin mutations are rejected; all three migrations apply; auth invite/login/recovery work; a duplicate import preserves opt-out; page reload routes work. Passing local checks is not proof these cloud checks passed.
 
 ## Next phase
 
-Phase 3: official template synchronization, supported component validation, audience selection, variable mapping, personalized preview and persistent campaign drafts. Queueing, real delivery/webhooks and scheduling follow in Phase 4. Operational reporting follows in Phase 5.
+Phase 4: official sending, launch and per-recipient revalidation, durable outbox/queue, scheduler, signed webhooks and opt-out processing. Phase 5 adds reporting and release validation. See the Phase 3 guide for supported formats, limits and the actual verification report.

@@ -1,0 +1,24 @@
+import {test,expect} from '@playwright/test';
+test('phase 3: templates, variables, personalized preview, draft persistence, mobile',async({page,request})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ const headers={Origin:'http://127.0.0.1:5180'};
+ await request.post('/__demo/api/reset',{headers,data:{confirmed:true}});
+ await request.post('/__demo/api/contacts',{headers,data:{name:'Amat Preview',phone:'081234567880',consent_status:'active',consent_source:'Form demo',consent_at:'2026-01-01'}});
+ await page.goto('/');await page.getByRole('button',{name:'Lihat preview lokal'}).click();
+ await page.getByRole('link',{name:'Templates',exact:true}).click();await page.getByRole('button',{name:'Muat template contoh',exact:true}).click();
+ await expect(page.getByText('4 template contoh dimuat.')).toBeVisible();
+ const row=page.getByRole('row').filter({hasText:'contoh_sapaan'});await row.getByRole('button',{name:'Lihat',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('Halo {{1}}');await page.getByRole('button',{name:'Tutup dialog'}).click();
+ await page.getByRole('link',{name:'Campaigns',exact:true}).click();await page.getByRole('button',{name:'Buat campaign',exact:true}).click();
+ await page.getByLabel('Nama campaign',{exact:true}).fill('Campaign Phase 3');await page.getByRole('button',{name:'Lanjut',exact:true}).click();
+ await page.getByLabel('Template simulasi',{exact:true}).selectOption({label:'contoh_sapaan · id · UTILITY'});
+ await page.getByLabel('BODY:1',{exact:true}).selectOption('name');await page.getByLabel('BODY:2',{exact:true}).selectOption('literal');await page.getByLabel('Isi BODY:2',{exact:true}).fill('codematt Relay');
+ await page.getByRole('button',{name:'Lanjut',exact:true}).click();await page.getByRole('button',{name:'Perbarui preview',exact:true}).click();
+ await expect(page.locator('.message-bubble')).toContainText('Halo Amat Preview, terima kasih sudah berlangganan informasi codematt Relay.');
+ await page.screenshot({path:'test-results/campaign-preview-desktop.png',fullPage:true});
+ await page.getByRole('button',{name:'Simpan draft',exact:true}).click();await expect(page.getByText('Draft disimpan · versi 1.')).toBeVisible();await page.getByRole('button',{name:'Tutup',exact:true}).click();
+ await page.reload();await page.getByRole('button',{name:'Lihat preview lokal'}).click();await page.getByRole('link',{name:'Campaigns',exact:true}).click();
+ await page.getByRole('row').filter({hasText:'Campaign Phase 3'}).getByRole('button',{name:'Buka draft'}).click();await expect(page.getByLabel('Nama campaign',{exact:true})).toHaveValue('Campaign Phase 3');
+ await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:/3\s*Preview/}).click();await page.getByRole('button',{name:'Perbarui preview',exact:true}).click();
+ await expect(page.locator('.message-bubble')).toContainText('codematt Relay');await page.screenshot({path:'test-results/campaign-preview-mobile.png',fullPage:true});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);expect(errors).toEqual([]);
+});
