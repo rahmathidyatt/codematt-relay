@@ -1,29 +1,62 @@
-# codematt Relay
+# codematt Relay — Phase 2
 
 Send clearly. Reach responsibly.
 
-**Delivery: Phase 1 foundation, not a finished broadcast application.** Includes a responsive Indonesian shell, local UI demo, Netlify Identity login/invitation/recovery flows, server-side roles, read-only database summary, a PostgreSQL foundation migration, Netlify configuration and tests. Contacts/imports, template sync, campaigns, queue, WhatsApp/webhooks, scheduling, reports and export remain subsequent phases. Their navigation pages state this explicitly. There is no send endpoint in this release.
+Phase 2 provides contact management, consent evidence/history, tag filters, CSV/XLSX import, archive/restore, filtered CSV exports and a persistent local demo. It includes Phase 1 authentication, database and dashboard foundations. Campaigns, WhatsApp sending, webhook, scheduling and delivery analytics are future phases. **No real message can be sent by this release.**
 
-## Start in VS Code (Windows, macOS or Linux)
+Indonesian VS Code and upgrade instructions: **[docs/PHASE-2-GUIDE-ID.md](docs/PHASE-2-GUIDE-ID.md)**.
 
-1. Extract this ZIP, then open the **codematt-relay** folder in VS Code using File > Open Folder. The Explorer must show `package.json` directly inside that folder.
-2. Install Node.js 24 LTS if needed. Open a new VS Code terminal using Terminal > New Terminal.
-3. Check `node --version` (must show v24.x) and `npm --version`.
-4. In that terminal run:
+## Quick start
+
+Install Node.js 24, open this folder in VS Code, then:
 
 ```sh
 npm ci
 npm run dev
 ```
 
-5. Open the local URL printed by Vite, normally `http://localhost:5173`. Select **Lihat preview lokal**. This is an empty synthetic workspace, clearly labeled DEMO. It does not log into Netlify, persist contacts or send messages. Changes of page work on desktop/mobile.
-6. Stop the server with Ctrl+C. Use `npm run dev` to reopen it. No .bat file is required.
+Open the printed loopback URL, select **Lihat preview lokal**, then **Contacts**. Demo data persists in `.demo-data` on this computer. Use synthetic records; this unauthenticated developer preview is restricted to loopback requests and is not an operational shared server. Do not expose the Vite server or use a reverse proxy to share it. Demo code is not mounted by a production build. The production UI has no demo button or fallback that bypasses Identity.
 
-If PowerShell blocks npm.ps1, use `npm.cmd ci` and `npm.cmd run dev`, or select the Command Prompt terminal profile in VS Code. If Vite reports a network-interface error in a restricted container, use `npm run dev -- --host 127.0.0.1`.
+Example imports are in `examples/`. All example names/numbers are test data with unknown consent, not real authorized recipients. Database contents and uploaded source files are not bundled.
 
-## Full local backend / Netlify setup
+## Implemented
 
-Use a Netlify account with a credit-based plan for Netlify Database. Costs and resource quotas are account-specific; this project does not promise free bulk messaging.
+- Contact creation and name/tag editing, normalization to E.164 with libphonenumber-js, duplicate number protection.
+- Database pagination, name/phone search, tag/consent/archive filtering and sorting.
+- Manual opt-out; explicit new consent evidence; append-only history through the app. Archived contacts and unknown/revoked consent are ineligible.
+- Archive/restore and bulk tag/archive/restore. Optimistic version checks and transactions prevent silent overwrites and partial bulk changes.
+- CSV UTF-8 / XLSX parsing in a bounded Web Worker, sheet selection, column mapping, preview, validation, review, progress and error CSV download.
+- 100-row idempotent import transactions. Existing contacts are skipped without changing identity, consent or opt-out. Unknown consent may be stored, but cannot qualify for broadcasts.
+- CSV export using cursor pages, filters, a 10,000-contact cap and formula neutralization. Exports are not transaction snapshots across pages if contacts change concurrently.
+- Server authorization, same-origin mutation protection, bounded JSON bodies, persistent per-user rate limit, safe errors and audit events.
+
+A phone number belongs to its consent identity and cannot be edited in place. Create a new contact for a new phone number. Structural validation does not prove WhatsApp account availability. No phone-account discovery request is made.
+
+## Architecture and routes
+
+React / TypeScript / Vite / Tailwind + Netlify Functions + Netlify Identity + Netlify Database (PostgreSQL). One Netlify site is one workspace. PGlite is development/test only and uses the same SQL migrations and contact service code.
+
+| Endpoint | Methods | Access |
+| --- | --- | --- |
+| /api/session | GET | Admin / operator / viewer |
+| /api/dashboard | GET | Admin / operator / viewer |
+| /api/settings | GET | Admin |
+| /api/contacts | GET, POST | Admin / operator |
+| /api/contacts/:id | PATCH | Admin / operator |
+| /api/contacts/:id/consent | POST | Admin / operator |
+| /api/contacts/:id/history | GET | Admin / operator |
+| /api/contacts/bulk | POST | Admin / operator |
+| /api/contacts/export | GET | Admin / operator |
+| /api/tags | GET | Admin / operator |
+| /api/imports | POST | Admin / operator |
+| /api/imports/:id | GET | Creating actor only |
+| /api/imports/:id/chunks | POST | Creating actor only |
+
+All production contact/import routes first verify Identity and trusted roles. Mutation requests require a matching Origin and JSON Content-Type. Body limit is 256 KiB and rate limit is 180 contact requests per minute per actor. No secrets or raw source files are logged. Responses are not cached. Unknown API routes return JSON 404.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for tables and future delivery design, and [docs/REQUIREMENTS.txt](docs/REQUIREMENTS.txt) for the original specification.
+
+## Full Netlify setup
 
 ```sh
 npm install -g netlify-cli
@@ -32,81 +65,67 @@ netlify init
 netlify dev
 ```
 
-Choose/create the intended Netlify project during init. Open `http://localhost:8888` for Functions; port 5173 alone is the UI development server. Identity must be enabled for the linked Netlify project. No credentials or account setup have been performed on your behalf.
+For an existing Netlify project use `netlify link` rather than creating another project. Choose the intended project explicitly. Open the URL printed by `netlify dev`, usually port 8888, for the real Functions backend.
 
-In the Netlify project:
+Enable Netlify Identity, set **Invite Only**, invite the first admin through Netlify, and assign trusted `app_metadata.roles` (`admin`, `operator`, `viewer`). Unknown roles are denied. Disable unnecessary external login providers. Configure the site's canonical URL; invitation and recovery links are handled at the root or `/auth/callback`. Roles may require a fresh login/token refresh after changes. The app supports invitation password setup and recovery callback forms; initiating recovery uses Identity administration in this phase.
 
-- Enable Identity; set registration to **Invite Only** before inviting users. Disable unneeded external authentication providers.
-- Invite yourself through the Netlify UI and assign `admin` in the user's trusted app metadata roles. Never grant roles from user-editable metadata. Other roles: `operator` and `viewer`.
-- Set the Identity site URL to the deployed URL. Invitation/recovery links may land on `/auth/callback` (or the root); the application reads the callback token before rendering the workspace.
-- An invite opens a password setup form; recovery opens a new password form. Password recovery requests can be initiated from Identity administration in this phase. There is no public signup or recovery-request UI.
-- Roles are enforced again inside Functions. A user with no supported role is denied. Role changes may require token refresh or a fresh login.
+Netlify Database requires a compatible credit-based plan. Cloud account configuration, billing and provisioning are external prerequisites. No account was linked and no cloud deployment was performed by this build.
 
-The exact installed package APIs were inspected. Provider login, email callbacks and role behavior still require an end-to-end test on your linked site. Do not treat local mocked tests as a live account test.
+## Database migrations
 
-## Database and migrations
+Keep both migrations under `netlify/database/migrations/`:
 
-`@netlify/database` is used only on the server. Netlify manages the connection for a linked project. The native migration is `netlify/database/migrations/0001_foundation.sql`. Netlify detects this directory during deployment; no database credentials belong in the frontend.
+1. `0001_foundation.sql` — unchanged Phase 1 schema.
+2. `0002_contacts_imports.sql` — contact versions, import batch results/counters, rate buckets and indexes.
 
-Migration constraints were executed using PGlite's embedded PostgreSQL engine. Deployment against Netlify-managed PostgreSQL remains to be tested. Do not re-run the migration manually after the platform has applied it. Future changes must use new numbered migration files. Do not rename or edit an already-applied migration.
+Netlify's native migration lifecycle applies pending files. Do not run already-applied migrations manually or edit their contents after use. Test the deployment against a preview database before production. Local demo creates/applies these migrations automatically in its own directory; tests execute them with PGlite. Managed Netlify PostgreSQL remains a separate deployment smoke test.
 
-This is one workspace per Netlify site. It is not a multi-tenant SaaS. See `docs/ARCHITECTURE.md` for tables, route plan, authorization, dispatch semantics and remaining phases.
+## Environment and secrets
 
-## Environment variables
+`.env.example` retains future server-only Meta placeholders. Nothing in Phase 2 uses a Meta token or sends a message, even if `WHATSAPP_SEND_ENABLED` is set true. Keep it false. Never prefix credentials with VITE_, commit `.env`, or place credentials in browser storage. Use Netlify Functions runtime environment variables when the actual integration phase is implemented.
 
-`.env.example` contains placeholders for the later WhatsApp integration. Copy it to `.env` only if needed locally. Never commit `.env` or any credentials. There are no required VITE_* secrets.
-
-| Variable | Use |
+| Variable | Future purpose |
 | --- | --- |
-| WHATSAPP_SEND_ENABLED | Keep false. Phase 1 has no sending code, even if set true. |
-| WHATSAPP_ACCESS_TOKEN | Future server-only Cloud API token. |
-| WHATSAPP_PHONE_NUMBER_ID | Future sender phone identifier. |
-| WHATSAPP_BUSINESS_ACCOUNT_ID | Future template synchronization account. |
-| WHATSAPP_VERIFY_TOKEN | Future webhook subscription verification secret. |
-| META_APP_SECRET | Future webhook HMAC verification key. |
-| WHATSAPP_API_VERSION | Future explicitly pinned supported Graph API version. |
+| WHATSAPP_SEND_ENABLED | Explicit production send gate; false now |
+| WHATSAPP_ACCESS_TOKEN | Official Cloud API token |
+| WHATSAPP_PHONE_NUMBER_ID | Sender identifier |
+| WHATSAPP_BUSINESS_ACCOUNT_ID | Template account identifier |
+| WHATSAPP_VERIFY_TOKEN | Webhook verification secret |
+| META_APP_SECRET | Webhook HMAC verification |
+| WHATSAPP_API_VERSION | Explicitly verified supported Graph API version |
 
-Add secrets only to Netlify Functions runtime scope when Phase 4 is ready. Preview/dev deployments must never receive production sending authorization. This release stores no Meta token and performs no Meta request.
+Async Workloads and Scheduled Functions are planned for Phase 4. Their extension/worker/webhook are not installed or configured yet. Do not subscribe Meta webhooks to this version.
 
-## Checks
+## Import limits and resume semantics
+
+Source files: 5 MiB; 10,000 data rows; 40 columns; 10 sheets; 2,000 characters per input cell. XLSX extraction: 20 MiB, 200 entries. Formula/macro/external-link workbooks are rejected; save values in a simple XLSX first. Worker parsing expires after 20 seconds. CSV must be UTF-8; legacy XLS is not supported.
+
+The server validates every mapped row again. Batches of 100 commit independently. The job owner and payload hash are checked before replay. Retrying an acknowledged/uncertain batch returns its stored result, not new inserts. A batch transaction that fails is rolled back. A closed/reloaded import dialog loses its client cursor; reimporting the same source uses a new job and skips existing numbers. Prior successful batches remain saved. There is no automatic rollback of an entire multi-batch import.
+
+Consent dates accept ISO with timezone or date-only YYYY-MM-DD interpreted at midnight Asia/Jakarta. Manual forms use the operator's device local timezone. Unknown status never implies consent. Re-consent must have new evidence later than previous opt-out. Imports never reactivate existing contacts.
+
+## Verification
 
 ```sh
-npm run typecheck
-npm run lint
-npm run test
-npm run build
+npm run check
+npx playwright install chromium
+npm run test:e2e
 ```
 
-Or run `npm run check`. All dependencies are pinned and the lockfile is included. Tests cover server role boundaries, safe errors, no auth/database access through unknown send endpoints, consent evidence constraints, E.164 shape constraints, unique contact phones, and unique campaign recipients/provider IDs. No real messages are sent. Phone normalization and CSV/XLSX processing are Phase 2 work; the database shape check does not prove a number uses WhatsApp.
+`check` runs TypeScript, ESLint, Vitest and production build. Unit/integration tests execute real SQL in PGlite with no Meta requests. Browser tests start an isolated demo server on port 5180 and use `.demo-test-data`; they reset only that test database. A preinstalled Chromium can optionally be selected with `PLAYWRIGHT_CHROMIUM_EXECUTABLE` in the test environment. See the implementation report for actual results and limitations.
 
-## Deploy Phase 1 to Netlify
+## Deploy
 
-Push the source to a new repository, excluding files listed in `.gitignore`, and import that repository in Netlify. The build command is `npm run build`, publish directory is `dist`, Functions directory is `netlify/functions`, and Node major is 24. `netlify.toml` includes SPA fallback and API forwarding. Prefer Git deployment or the Netlify CLI; uploading only `dist` does not deliver the Functions/database project.
-
-Alternatively, after linking and reviewing account configuration:
+Import the source repository into Netlify. Configuration: Node 24, `npm run build`, publish `dist`, Functions `netlify/functions`. `netlify.toml` provides SPA/API forwarding and security headers. Git deploy or Netlify CLI is required; dragging only dist cannot deploy backend code and migrations.
 
 ```sh
 netlify deploy --build
 ```
 
-Review the draft deploy first. Use `netlify deploy --build --prod` only when you intend to publish it. Verify Identity redirects against the appropriate site URL; a preview's database/auth availability must be checked separately. Production does not expose the local demo button.
+Review the draft, configure Identity/Database, and verify the integration before intentionally publishing with `netlify deploy --build --prod`. No publishing has been done on your behalf.
 
-Acceptance smoke test on the linked site: unauthenticated API request returns 401; viewer can see summary but settings returns 403; admin can see settings; missing database returns a safe 503; login/invite/recovery work; `/contacts` survives reload; `/api/unknown` returns JSON 404. There is no working campaign send flow yet.
+Required cloud smoke checks: anonymous API access is rejected; viewer contact access is forbidden; admin/operator can create/edit/import; cross-origin mutations are rejected; the second migration applies; auth invite/login/recovery work; a duplicate import preserves opt-out; page reload routes work. Passing local checks is not proof these cloud checks passed.
 
-## WhatsApp / Async Workloads preparation (Phase 4)
+## Next phase
 
-Use only official Meta WhatsApp Business Platform. Prepare a business account, registered sender, token with appropriate permissions, and approved templates. Do not paste tokens into chat or frontend configuration. Before implementing, verify the then-current Meta API version, template components, webhook signature rules, account limits and permissions in official documentation. This phase does not supply a working webhook endpoint, so do not subscribe Meta to it yet.
-
-The Async Workloads extension must be enabled on the target Netlify site when the worker is implemented. Its package is intentionally not installed in Phase 1 because no worker uses it yet. Scheduler will only claim due campaigns and publish small identifiers; actual sends run asynchronously. Detailed decisions, including uncertain responses that cannot safely retry, are in the architecture document.
-
-## Troubleshooting
-
-- Preview works but login does not: port 5173 is UI only. Enable Identity and use linked `netlify dev` or the deployed site.
-- Access denied after login: assign a trusted role in Identity, then sign out and in.
-- Database unavailable: confirm the plan, project link, provisioned database and successful migration in the Netlify deploy logs. Do not place credentials in the browser to fix it.
-- No contacts/import/send button: those operational flows are not in Phase 1; the UI deliberately shows their planned phase.
-- A callback expired: request a new invitation or recovery link through Identity administration.
-
-## Next work
-
-Continue Phase 2: contact API, consent events, tagging, opt-out/renewed-consent rules, CSV/XLSX import wizard, pagination, archive, safe exports and tests. Then proceed through the phases in `docs/ARCHITECTURE.md`. The complete original requirements are retained in `docs/REQUIREMENTS.txt`.
+Phase 3: official template synchronization, supported component validation, audience selection, variable mapping, personalized preview and persistent campaign drafts. Queueing, real delivery/webhooks and scheduling follow in Phase 4. Operational reporting follows in Phase 5.

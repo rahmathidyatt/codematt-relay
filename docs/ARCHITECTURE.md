@@ -1,6 +1,6 @@
 # codematt Relay — architecture and phased delivery
 
-Status: Phase 1 foundation. This package is not the completed campaign product.
+Status: Phase 2 contacts and imports implemented. Campaign delivery is not yet implemented.
 
 ## Boundaries
 One Netlify site represents one workspace. Every signed-in user must have a trusted Identity role: admin, operator, or viewer. Unknown roles have no access. Multi-workspace hosting requires a separate tenant isolation design before implementation. Credentials stay in Functions environment variables; there is no public registration UI. Identity must be configured Invite Only at the provider.
@@ -40,7 +40,7 @@ STOP, UNSUBSCRIBE, BERHENTI inbound events will revoke consent transactionally. 
 | /analytics | /api/analytics, /api/exports | 5 |
 | provider only | /api/webhooks/whatsapp | 4 |
 
-APIs return {ok:true,data} or {ok:false,error:{code,message}}. Authentication precedes database access. No auth bypass exists for demo. The local UI preview uses synthetic data with a permanent DEMO label and never makes an API send request. Unknown API routes return JSON 404, never the SPA HTML.
+APIs return {ok:true,data} or {ok:false,error:{code,message}}. Authentication precedes database access. No auth bypass exists for demo. The local demo uses a separate loopback-only /__demo/api namespace backed by PGlite, with a permanent DEMO label and no send request. Production API authentication is never bypassed. Unknown API routes return JSON 404, never the SPA HTML.
 
 ## Phases and gates
 1. Foundation: pinned compatible packages, responsive shell, login/callback/password setup, role authorization, database migration, read-only summary/settings, tests, configuration and setup docs.
@@ -59,3 +59,14 @@ Every phase requires typecheck, lint, tests and production build before continui
 - https://docs.netlify.com/build/async-workloads/overview/
 
 Netlify Database requires a credit-based plan. Async Workloads requires enabling the extension. Availability in docs is not evidence that either is enabled for this user's account. Package-lock records installed versions; provider runtime and billing are external configuration.
+
+## Phase 2 implementation decisions
+- Contact phone numbers are immutable identities. Editing a name or tag never changes consent. To use another number, create a separate contact with its own consent evidence.
+- All contact, tag and import endpoints require admin/operator; viewer is limited to reports. Mutations reject absent or cross-origin Origin headers, non-JSON requests, and bodies above 256 KiB. Production contact requests have a durable 180/minute per-actor fixed-window limit.
+- A version integer and FOR UPDATE lock prevent stale updates. Bulk changes are atomic; one stale selection rolls back the entire bulk action.
+- Consent grant/revoke and evidence history share one transaction. Grant requires explicit confirmation and source/date, after any previous opt-out. Archives cannot receive new consent until restored; restoring does not grant consent.
+- Import runs in sequential 100-row transactions. Job IDs and chunk hashes provide replay safety. Duplicates, including archived/opted-out contacts, are never updated by import. A rejected transaction creates no partial chunk. Client can resume the same chunk while its dialog remains open. Closing/reloading loses the client cursor; reimport creates a new job but duplicate phones remain protected.
+- Source files are parsed in a Web Worker, bounded to 5 MiB, 10,000 data rows and 40 columns. XLSX uncompressed contents are capped at 20 MiB; XML formulas, unsafe archive paths, external-link parts and macros are rejected. Only validated, rebuilt ZIP data is passed to the spreadsheet parser. Worker is terminated after 20 seconds. Server revalidates all mapped contact records.
+- Table data is paginated in the database; exports use 500-row UUID cursor pages and a creation cutoff. Export is capped at 10,000 contacts. It is not a repeatable-read snapshot across requests: concurrent edits may appear in later pages. Formula-like CSV cells are escaped.
+- Demo routes exist only inside Vite development middleware and only accept loopback Host with same-origin mutation requests. Data is in .demo-data, isolated from Netlify. E2E uses .demo-test-data. Both are excluded from Git and delivery ZIP.
+- Initial segment support is tag + consent + archive filtering. Saved named segments are not included. Tags are normalized lowercase and limited to 20 per contact. Tag filter suggestions are capped at 100 and narrowed by typed input.

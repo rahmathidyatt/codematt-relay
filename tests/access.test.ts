@@ -35,6 +35,16 @@ describe('API trust boundaries', () => {
     const result = await handler(new Request('https://relay.example/api/campaigns/send',{method:'POST'}));
     expect(result.status).toBe(404); expect(mocks.getUser).not.toHaveBeenCalled();
   });
+  it('blocks viewer contact access before any database request', async () => {
+    mocks.getUser.mockResolvedValue({id:'v',roles:['viewer']});
+    const response=await handler(new Request('https://relay.example/api/contacts'));
+    expect(response.status).toBe(403);expect(mocks.getDatabase).not.toHaveBeenCalled();
+  });
+  it('blocks cross-origin writes even for an authenticated admin', async () => {
+    mocks.getUser.mockResolvedValue({id:'a',roles:['admin']});
+    const response=await handler(new Request('https://relay.example/api/contacts',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:'{}'}));
+    expect(response.status).toBe(403);expect(mocks.getDatabase).not.toHaveBeenCalled();
+  });
   it('restricts writes and settings by role', () => {
     expect(can(['viewer'],'contacts:write')).toBe(false);
     expect(can(['operator'],'settings:read')).toBe(false);
