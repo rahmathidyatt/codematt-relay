@@ -1,0 +1,2096 @@
+MASTER BUILD PROMPT
+PROJECT: codematt Relay
+
+You are acting as a Principal Full-Stack Engineer, Senior Product Designer, Security Engineer, Database Architect, QA Engineer, and DevOps Engineer.
+
+Build a production-ready web application called:
+
+codematt Relay
+
+Tagline:
+"Send clearly. Reach responsibly."
+
+The application is a modern, simple, compliant communication campaign manager focused initially on WhatsApp Business Platform.
+
+This must NOT be a WhatsApp Web automation tool.
+
+The application must be designed to deploy on Netlify without requiring a traditional VPS or an always-running local computer.
+
+==================================================
+1. CORE PRODUCT VISION
+==================================================
+
+codematt Relay is a lightweight communication campaign dashboard for sending approved WhatsApp messages to many opted-in contacts in a controlled, auditable, easy-to-understand way.
+
+The product should feel:
+
+- modern
+- Gen Z
+- minimal
+- clean
+- fast
+- calm
+- trustworthy
+- professional
+- friendly
+- extremely easy to learn
+
+Avoid the visual complexity of enterprise CRM software.
+
+The user should understand the application within approximately 30 seconds after login.
+
+The product should optimize for clarity rather than the maximum possible number of features.
+
+Primary use cases:
+
+1. Import contacts from CSV/XLSX.
+2. Organize contacts using tags or segments.
+3. Maintain consent/opt-in information.
+4. Manage approved WhatsApp message templates.
+5. Create a campaign.
+6. Select recipients.
+7. Preview personalized messages.
+8. Schedule or launch a campaign.
+9. Process sending asynchronously.
+10. Monitor sent, delivered, read, failed, skipped, and pending states.
+11. Automatically block opted-out or invalid contacts.
+12. Review campaign history and analytics.
+13. Export reports.
+14. Maintain an audit trail.
+
+The first version should focus on campaign management.
+
+Do NOT turn this into:
+- a full CRM
+- a social media platform
+- an email marketing suite
+- an AI chatbot platform
+- a complicated omnichannel inbox
+
+Those may be future modules.
+
+==================================================
+2. NON-NEGOTIABLE WHATSAPP COMPLIANCE
+==================================================
+
+Use ONLY the official WhatsApp Business Platform / Cloud API.
+
+Never implement or install:
+
+- whatsapp-web.js
+- Baileys
+- Puppeteer WhatsApp automation
+- Selenium WhatsApp automation
+- WhatsApp Web QR session automation
+- browser session hijacking
+- unofficial WhatsApp protocol libraries
+- phone number scraping
+- contact harvesting
+- account restriction bypasses
+- message limit bypasses
+- anti-ban techniques
+- number rotation intended to bypass platform enforcement
+- mechanisms for unsolicited cold messaging
+
+Do not implement anything intended to evade Meta or WhatsApp policies.
+
+Broadcast recipients must have valid consent.
+
+Every contact must be capable of storing:
+
+- consent status
+- consent source
+- consent timestamp
+- opt-out timestamp
+
+Contacts without valid consent must not be eligible for campaigns.
+
+Contacts that opt out must be blocked from future broadcasts unless they provide new valid consent.
+
+Add a mandatory confirmation before launching a campaign:
+
+"Saya memastikan penerima dalam campaign ini telah memberikan persetujuan untuk menerima pesan."
+
+The user cannot send until this confirmation is checked.
+
+For proactive WhatsApp broadcasts, use templates approved by WhatsApp/Meta when required.
+
+Do not fake template approval.
+
+Do not allow the user to manually mark a rejected Meta template as approved.
+
+Do not claim that a message was delivered or read unless the WhatsApp webhook reported that state.
+
+The application must show a clear difference between:
+
+queued
+sent
+delivered
+read
+failed
+skipped
+
+Never interpret "sent" as "delivered".
+
+When official platform rules or API behavior conflict with application assumptions, official WhatsApp Business Platform behavior takes precedence.
+
+==================================================
+3. PRODUCT NAME AND BRAND
+==================================================
+
+Brand:
+codematt Relay
+
+Primary text logo:
+codematt
+Relay
+
+Visual hierarchy:
+"codematt" should feel subtle.
+"Relay" should be the product name.
+
+Tagline:
+Send clearly. Reach responsibly.
+
+Do not use the official WhatsApp logo as the application logo.
+
+WhatsApp may only be referenced as an integration/channel where appropriate.
+
+Create a simple abstract Relay icon based on:
+- signal
+- connection
+- message movement
+- directional flow
+
+Do not copy another company's logo.
+
+==================================================
+4. VISUAL DESIGN DIRECTION
+==================================================
+
+Create a distinctive modern SaaS dashboard.
+
+The design should be Gen Z, but NOT childish.
+
+Avoid:
+- excessive gradients
+- neon overload
+- glassmorphism everywhere
+- huge hero graphics inside the dashboard
+- excessive cards
+- excessive icons
+- cramped tables
+- rainbow status colors
+- unnecessary animation
+- corporate blue everywhere
+
+Recommended visual language:
+
+Background:
+soft off-white / very light neutral
+
+Primary surface:
+white
+
+Primary text:
+near-black / charcoal
+
+Secondary text:
+muted gray
+
+Brand accent:
+fresh teal / mint-green family
+
+Optional secondary accent:
+soft blue
+
+Danger:
+muted red
+
+Warning:
+warm amber
+
+Success:
+calm green
+
+Use the accent color strategically.
+
+Do not make every button green.
+
+Typography:
+Use a modern sans-serif font such as Inter, Geist, or another production-safe modern font.
+
+Typography should have excellent readability.
+
+Design characteristics:
+
+- 14px to 16px comfortable body text
+- bold but compact page titles
+- rounded corners approximately 14px to 18px
+- thin borders
+- subtle shadows
+- generous whitespace
+- restrained animations
+- smooth hover states
+- skeleton loading states
+- polished empty states
+- clear hierarchy
+- responsive layout
+- dark mode optional, not required for MVP
+
+Use Lucide icons or another lightweight consistent icon set.
+
+Avoid emoji as functional icons.
+
+==================================================
+5. UX PHILOSOPHY
+==================================================
+
+The application must reduce cognitive load.
+
+Primary navigation should contain only:
+
+Dashboard
+Contacts
+Campaigns
+Templates
+Analytics
+Settings
+
+Place secondary/administrative functions such as Audit Log inside Settings or an overflow location rather than cluttering the navigation.
+
+On desktop:
+use a compact left sidebar.
+
+On mobile:
+collapse navigation appropriately.
+
+Do not use nested navigation unless necessary.
+
+The main action should always be obvious.
+
+Examples:
+
+Dashboard:
+"Campaign Baru"
+
+Contacts:
+"Import Kontak"
+
+Campaigns:
+"Campaign Baru"
+
+Templates:
+"Sinkronkan Template"
+
+Do not show multiple equally prominent CTAs on the same screen.
+
+==================================================
+6. LANGUAGE
+==================================================
+
+Default user interface language:
+Bahasa Indonesia.
+
+Code, variable names, database names, API names, comments, and internal technical documentation:
+English.
+
+Prepare the architecture so English localization could be added later.
+
+Do not hardcode UI strings throughout random components.
+
+Keep user-facing strings centralized where practical.
+
+Use natural Indonesian.
+
+Avoid awkward machine-translated Indonesian.
+
+==================================================
+7. RECOMMENDED TECH STACK
+==================================================
+
+Use stable versions that are compatible at implementation time.
+
+Before installing dependencies, verify compatibility between current stable releases.
+
+Frontend:
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- accessible component primitives
+- Lucide icons
+- Recharts only where charts materially improve comprehension
+
+Do not add a dependency when a simple native implementation is sufficient.
+
+Backend:
+- Netlify Functions
+- TypeScript
+
+Authentication:
+- Netlify Identity
+- @netlify/identity
+- Invite-only registration
+
+Database:
+- Netlify Database
+- PostgreSQL
+- @netlify/database
+- Drizzle ORM if compatible and appropriate
+- schema-first migrations
+
+Async processing:
+- Netlify Async Workloads
+
+Scheduling:
+- Netlify Scheduled Functions for lightweight scheduling checks
+- Async Workloads for the actual sending process
+
+Unstructured file storage, if needed:
+- Netlify Blobs
+
+Never use Netlify Blobs as the primary relational database for contacts, campaigns, recipients, templates, or message states.
+
+Structured relational data belongs in PostgreSQL.
+
+Deployment:
+Netlify.
+
+No VPS should be required.
+
+==================================================
+8. NETLIFY ARCHITECTURE
+==================================================
+
+Design the application around:
+
+Browser
+    ↓
+React Dashboard
+    ↓
+Netlify Functions
+    ↓
+Netlify Database
+    ↓
+Async Workloads
+    ↓
+WhatsApp Cloud API
+    ↓
+WhatsApp Webhook
+    ↓
+Netlify Function
+    ↓
+Database status updates
+
+A campaign request must NEVER synchronously loop through thousands of contacts from the browser request.
+
+Correct flow:
+
+User presses Send
+    ↓
+Server validates campaign
+    ↓
+Campaign status becomes queued
+    ↓
+Async workload event created
+    ↓
+Worker processes recipients in safe batches
+    ↓
+Official WhatsApp API receives requests
+    ↓
+Webhook updates delivery state
+
+The initial HTTP request must return quickly.
+
+==================================================
+9. IMPORTANT ASYNC WORKLOAD RULES
+==================================================
+
+Async Workload events must contain small references such as:
+
+campaignId
+batchId
+
+Do not send an entire 10,000-contact recipient list inside an event payload.
+
+Retrieve campaign and recipient data from PostgreSQL when processing.
+
+Use database state as the durable source of truth.
+
+Implement:
+
+- retry strategy
+- idempotency
+- batch processing
+- safe concurrency
+- pause support
+- resume support
+- cancellation checks
+- rate-limit handling
+- error isolation
+
+Retry only errors that can reasonably succeed later, such as:
+
+- HTTP 429
+- temporary network errors
+- selected 5xx errors
+
+Respect Retry-After where provided.
+
+Do NOT repeatedly retry permanent validation errors.
+
+A failure for one recipient must not necessarily fail an entire campaign.
+
+==================================================
+10. CAMPAIGN BUILDER
+==================================================
+
+Campaign creation should use a simple 4-step wizard.
+
+STEP 1:
+Audience
+
+STEP 2:
+Template
+
+STEP 3:
+Preview
+
+STEP 4:
+Schedule & Send
+
+Display a visual step indicator.
+
+------------------------------
+STEP 1: AUDIENCE
+------------------------------
+
+Allow:
+
+- all eligible contacts
+- filter by tag
+- filter by segment
+- manually selected contacts
+
+Show:
+
+Selected          1,248
+Eligible          1,203
+No consent           21
+Opted out             9
+Invalid              15
+
+Only eligible recipients should proceed.
+
+Explain skipped recipients without overwhelming the user.
+
+------------------------------
+STEP 2: TEMPLATE
+------------------------------
+
+Display only usable templates.
+
+Show:
+
+Template name
+Category
+Language
+Meta status
+Last synchronized date
+
+Template status examples:
+
+Approved
+Pending
+Rejected
+Paused
+Unavailable
+
+Provide variable mapping.
+
+Example:
+
+Hello {{1}}
+
+{{1}} → Contact Name
+
+Show validation if required variables are missing.
+
+Do not allow a campaign to launch with unresolved variables.
+
+------------------------------
+STEP 3: PREVIEW
+------------------------------
+
+Create a realistic WhatsApp-style message preview.
+
+Do not clone WhatsApp Web.
+
+The preview is only a visual message simulation.
+
+Allow the operator to preview several contacts:
+
+Preview as:
+Rahmat
+Anna
+Budi
+
+Show how variables resolve.
+
+Add:
+
+Send Test
+
+Test sending must use the same compliance and API validation pipeline.
+
+------------------------------
+STEP 4: SCHEDULE & SEND
+------------------------------
+
+Options:
+
+Send now
+Schedule
+
+Default timezone:
+Asia/Jakarta
+
+Timezone must be configurable.
+
+Before sending display:
+
+Campaign
+Template
+Recipients
+Estimated eligible recipients
+Skipped recipients
+Schedule
+Channel
+Confirmation
+
+Require the consent confirmation checkbox.
+
+Final CTA:
+
+"Jadwalkan Campaign"
+
+or
+
+"Kirim Campaign"
+
+Use a confirmation modal for large sends.
+
+Never accidentally trigger sending from a simple Enter key.
+
+==================================================
+11. DASHBOARD
+==================================================
+
+Make Dashboard extremely simple.
+
+Header:
+
+Selamat datang 👋
+
+Subtext:
+"Ini ringkasan aktivitas Relay hari ini."
+
+Do not overdecorate.
+
+Primary metrics:
+
+Campaign
+Sent
+Delivered
+Read
+Failed
+
+Prefer 4 key metrics at once rather than a wall of cards.
+
+Include:
+
+Campaign Terbaru
+Aktivitas Pengiriman
+Status Integrasi
+
+Example connection component:
+
+WhatsApp Business
+● Terhubung
+
+or
+
+WhatsApp Business
+● Belum terhubung
+
+Recent Campaign table:
+
+Name
+Audience
+Sent
+Delivered
+Read
+Failed
+Status
+Date
+
+Use clear status chips.
+
+Campaign statuses:
+
+Draft
+Scheduled
+Queued
+Sending
+Paused
+Completed
+Canceled
+Failed
+
+==================================================
+12. CONTACTS
+==================================================
+
+Contacts page must support:
+
+- search
+- pagination
+- sorting
+- filter
+- tags
+- bulk selection
+- import
+- export
+- edit
+- archive
+- opt-out management
+
+Do not permanently delete contacts by default.
+
+Prefer archive/soft delete.
+
+Contact fields:
+
+Name
+Phone
+Tags
+Consent
+Consent Source
+Consent Date
+Opt-out
+Created At
+Updated At
+
+Phone numbers must be normalized to E.164 format.
+
+Example:
+
+081234567890
+with Indonesia selected
+becomes
++6281234567890
+
+Do local structural validation.
+
+Do NOT claim that local validation guarantees a number has a WhatsApp account.
+
+Do not query arbitrary numbers merely to discover WhatsApp accounts if such behavior violates the platform's intended use.
+
+==================================================
+13. CONTACT IMPORT
+==================================================
+
+Support:
+
+.csv
+.xlsx
+
+Import UX should be:
+
+1. Select file.
+2. Preview.
+3. Map columns.
+4. Validate.
+5. Review problems.
+6. Import.
+
+Example mapping:
+
+Nama              → Name
+No WhatsApp       → Phone
+Kategori          → Tag
+Consent           → Consent
+Tanggal Consent   → Consent Date
+
+Automatically detect likely headers but allow manual mapping.
+
+Detect:
+
+- duplicate numbers
+- empty numbers
+- malformed numbers
+- duplicate records
+- unsupported rows
+- missing consent information
+
+Provide a pre-import result:
+
+Valid              926
+Duplicate            31
+Invalid              12
+Missing consent      14
+
+Allow:
+"Import kontak valid saja"
+
+Do not silently import malformed records.
+
+Avoid sending giant import payloads.
+
+Process large imports in chunks.
+
+Add reasonable file-size and row-count protection.
+
+Display useful error messages.
+
+Never expose stack traces to users.
+
+==================================================
+14. CONTACT SEGMENTATION
+==================================================
+
+Keep segmentation simple.
+
+Support tags.
+
+Examples:
+
+Winner
+Warrior
+Champion
+Leader
+CA
+Training
+Bright Day
+
+Segments can use rules such as:
+
+Tag is Winner
+AND
+Consent is Active
+
+or:
+
+Tag is Training
+AND
+Consent is Active
+
+Do not build an overly complicated visual query builder in MVP.
+
+==================================================
+15. TEMPLATES
+==================================================
+
+Templates page should synchronize templates from the official WhatsApp Business Platform where possible.
+
+Show:
+
+Template Name
+Category
+Language
+Status
+Last Updated
+
+Clicking a template opens:
+
+- content
+- header
+- body
+- footer
+- buttons
+- variables
+- language
+- Meta status
+
+Never create fake approval states.
+
+If template creation/submission is not implemented correctly in the first production version, provide template synchronization and viewing first.
+
+Correct functionality is more important than pretending a feature exists.
+
+==================================================
+16. CAMPAIGNS
+==================================================
+
+Campaign listing should provide:
+
+Search
+Filter by status
+Filter by date
+
+Columns:
+
+Campaign
+Audience
+Template
+Recipients
+Delivery
+Read
+Status
+Scheduled
+Created
+
+Click opens Campaign Detail.
+
+Campaign Detail should include:
+
+Overview
+Recipients
+Activity
+
+Overview:
+
+Queued
+Sent
+Delivered
+Read
+Failed
+Skipped
+
+Recipients:
+
+Name
+Phone
+Current Status
+Reason
+Updated
+
+Activity:
+
+Campaign created
+Campaign scheduled
+Processing started
+Paused
+Resumed
+Completed
+
+Support:
+
+Pause
+Resume
+Cancel
+
+Pause does not recall messages already handed to WhatsApp.
+
+Cancel does not recall already sent messages.
+
+Make this clear in UI.
+
+==================================================
+17. ANALYTICS
+==================================================
+
+Keep analytics useful rather than decorative.
+
+Metrics:
+
+Sent
+Delivered
+Read
+Failed
+
+Calculate rates only when denominator is valid.
+
+Example:
+
+Delivery Rate =
+Delivered / Sent
+
+Do not count queued messages as sent.
+
+Allow date filtering:
+
+7 hari
+30 hari
+90 hari
+Custom
+
+Provide:
+
+campaign comparison
+delivery trend
+failure reasons
+
+Do not create vanity charts without actionable meaning.
+
+Provide export to CSV.
+
+Escape exported spreadsheet cells safely to reduce CSV formula injection risk.
+
+==================================================
+18. WHATSAPP WEBHOOK
+==================================================
+
+Create a dedicated webhook endpoint using a Netlify Function.
+
+Support:
+
+webhook verification
+incoming webhook events
+message status events
+
+Validate webhook authenticity using official Meta mechanisms.
+
+Verify signatures server-side when required.
+
+Never trust client-provided webhook events.
+
+Process webhook payloads idempotently.
+
+Store unique provider/message IDs.
+
+Ignore duplicate webhook deliveries safely.
+
+Possible state progression:
+
+queued
+sent
+delivered
+read
+
+A message can also become:
+
+failed
+
+Do not regress a message from a more advanced valid state because an older duplicated webhook arrived later.
+
+Store raw webhook metadata only when necessary and safe.
+
+Do not log secrets.
+
+==================================================
+19. OPT-OUT
+==================================================
+
+Implement manual opt-out.
+
+Also prepare inbound message processing so common clear opt-out requests such as:
+
+STOP
+UNSUBSCRIBE
+BERHENTI
+
+can mark the relevant contact as opted out when confidently recognized.
+
+Record:
+
+opted_out_at
+opt_out_source
+
+Once opted out:
+
+the contact must be excluded from new campaigns.
+
+Display:
+
+"Kontak ini tidak dapat menerima campaign karena telah berhenti berlangganan."
+
+Do not provide a one-click bypass.
+
+Re-enabling consent should require an explicit consent update with source and timestamp.
+
+==================================================
+20. DATABASE DESIGN
+==================================================
+
+Create a proper normalized PostgreSQL schema.
+
+At minimum consider:
+
+contacts
+tags
+contact_tags
+
+templates
+
+campaigns
+campaign_recipients
+
+message_events
+webhook_events
+
+import_jobs
+audit_logs
+
+app_settings if required
+
+Use UUID primary keys where appropriate.
+
+contacts should have a unique normalized phone constraint where business rules allow it.
+
+Important contact fields:
+
+id
+name
+phone_e164
+consent_status
+consent_source
+consent_at
+opted_out_at
+opt_out_source
+archived_at
+created_at
+updated_at
+
+campaigns:
+
+id
+name
+template_id
+status
+scheduled_at
+timezone
+created_by
+started_at
+completed_at
+created_at
+updated_at
+
+campaign_recipients:
+
+id
+campaign_id
+contact_id
+provider_message_id
+status
+failure_code
+failure_reason
+attempt_count
+sent_at
+delivered_at
+read_at
+failed_at
+created_at
+updated_at
+
+Create useful indexes for:
+
+phone
+campaign status
+campaign recipients
+provider message ID
+scheduled campaigns
+timestamps
+
+Use database constraints rather than relying only on frontend validation.
+
+Migrations must be committed to the repository.
+
+==================================================
+21. AUTHENTICATION & AUTHORIZATION
+==================================================
+
+Use Netlify Identity.
+
+Set registration to:
+
+Invite Only.
+
+Do not expose public signup for this administrative application.
+
+Roles:
+
+admin
+operator
+viewer
+
+Admin:
+full access
+
+Operator:
+contacts, templates, campaigns, analytics
+
+Viewer:
+read-only analytics and campaign reports
+
+Always enforce authorization server-side.
+
+Hiding buttons in the frontend is NOT authorization.
+
+Netlify Functions handling protected operations must verify the authenticated user and role.
+
+==================================================
+22. SECRET MANAGEMENT
+==================================================
+
+Never put Meta access tokens in:
+
+frontend code
+Git
+localStorage
+public environment variables
+build output
+
+Use Netlify environment variables.
+
+Expected environment variables may include:
+
+WHATSAPP_ACCESS_TOKEN
+WHATSAPP_PHONE_NUMBER_ID
+WHATSAPP_BUSINESS_ACCOUNT_ID
+WHATSAPP_VERIFY_TOKEN
+META_APP_SECRET
+
+Use names appropriate to the actual implementation.
+
+Never return these values through API endpoints.
+
+Settings page must only display safe connection information.
+
+Example:
+
+WhatsApp Business
+Connected
+
+Phone ID:
+••••••3471
+
+Do not display secrets.
+
+Provide a server-side "Test Connection" function.
+
+==================================================
+23. SECURITY
+==================================================
+
+Treat contact information as sensitive operational data.
+
+Implement:
+
+- authentication
+- authorization
+- server-side validation
+- input sanitization
+- secure headers
+- CSRF-aware architecture where applicable
+- rate limits for sensitive endpoints
+- request size limits
+- safe file validation
+- webhook verification
+- output encoding
+- SQL injection protection
+- XSS protection
+- audit logging
+
+Use parameterized queries / ORM.
+
+Never concatenate untrusted values into SQL.
+
+Do not log:
+
+access tokens
+app secrets
+complete sensitive authorization headers
+
+Mask phone numbers in logs where practical.
+
+Production errors should return safe messages.
+
+Detailed diagnostic information belongs in server logs.
+
+==================================================
+24. API DESIGN
+==================================================
+
+Keep APIs consistent.
+
+Example route families:
+
+/api/dashboard
+/api/contacts
+/api/tags
+/api/imports
+/api/templates
+/api/campaigns
+/api/analytics
+/api/settings
+/api/webhooks/whatsapp
+
+Use appropriate HTTP methods.
+
+Return a consistent structure.
+
+Success example:
+
+{
+  "ok": true,
+  "data": {...}
+}
+
+Error example:
+
+{
+  "ok": false,
+  "error": {
+    "code": "CONTACT_INVALID",
+    "message": "Nomor kontak tidak valid."
+  }
+}
+
+Do not leak internal exceptions.
+
+==================================================
+25. CAMPAIGN SAFETY
+==================================================
+
+Before queuing a campaign, server-side validation must confirm:
+
+campaign exists
+campaign is allowed to launch
+template is usable
+template variables resolve
+audience exists
+recipient consent is valid
+recipients are not opted out
+duplicate recipients are removed
+scheduled time is valid
+authenticated user has permission
+
+The frontend confirmation alone is never sufficient.
+
+Validate again on the server.
+
+Immediately before individual delivery, verify that the contact is still eligible.
+
+This protects against someone opting out after the campaign was created but before their message was processed.
+
+==================================================
+26. MESSAGE IDEMPOTENCY
+==================================================
+
+Prevent accidental duplicate sends.
+
+Each campaign-recipient pair must have a unique logical identity.
+
+Before sending:
+
+check whether a provider message has already been successfully created.
+
+Use transactional state changes where appropriate.
+
+Async retries must not create duplicate messages simply because a worker was retried.
+
+This is a critical production requirement.
+
+==================================================
+27. RATE LIMITING
+==================================================
+
+Do not hardcode aggressive sending rates.
+
+The application must respect:
+
+- WhatsApp API responses
+- account limits
+- rate-limit headers where available
+- quality status
+- provider restrictions
+
+Implement conservative configurable concurrency.
+
+When rate limited:
+
+slow down
+honor Retry-After
+retry safely
+
+Never implement mechanisms intended to circumvent messaging limits.
+
+==================================================
+28. SCHEDULING
+==================================================
+
+Use Asia/Jakarta as the initial default timezone.
+
+Store scheduled timestamps unambiguously.
+
+Prefer database timestamps in UTC with associated campaign timezone where required.
+
+Display local time to the user.
+
+A lightweight Scheduled Function may periodically locate due campaigns.
+
+Its job should ONLY:
+
+- find due campaigns
+- safely claim them
+- trigger asynchronous processing
+
+It must not send thousands of messages itself.
+
+The asynchronous worker handles actual sending.
+
+Prevent the scheduler from starting the same campaign twice.
+
+==================================================
+29. USER FEEDBACK
+==================================================
+
+Every asynchronous action must have visible feedback.
+
+Examples:
+
+Mengimpor kontak...
+926 kontak berhasil diimpor.
+
+Campaign masuk antrean.
+Pengiriman akan diproses secara bertahap.
+
+Never make the UI freeze while a campaign runs.
+
+Provide toast notifications carefully.
+
+Do not spam the user with toast messages for every message recipient.
+
+Use progress areas instead.
+
+==================================================
+30. EMPTY STATES
+==================================================
+
+Create thoughtful empty states.
+
+Contacts:
+
+"Belum ada kontak."
+"Import kontak untuk mulai membuat audience."
+
+Campaigns:
+
+"Belum ada campaign."
+"Buat campaign pertama untuk mulai mengirim pesan."
+
+Templates:
+
+"Belum ada template."
+"Hubungkan WhatsApp Business dan sinkronkan template."
+
+Analytics:
+
+"Belum cukup data untuk ditampilkan."
+
+Keep empty states calm and useful.
+
+==================================================
+31. ERROR STATES
+==================================================
+
+Provide actionable errors.
+
+Bad:
+"Something went wrong."
+
+Better:
+"Campaign tidak dapat dimulai karena template belum disetujui."
+
+Bad:
+"Import error."
+
+Better:
+"12 baris tidak diimpor karena nomor telepon tidak valid."
+
+Create:
+
+retry button
+details where safe
+supporting explanation
+
+Never expose a JavaScript stack trace in production UI.
+
+==================================================
+32. RESPONSIVENESS
+==================================================
+
+The product is primarily desktop-first because of tables and campaign management.
+
+But it must work correctly on:
+
+desktop
+tablet
+mobile
+
+On small screens:
+
+- collapse sidebar
+- turn large tables into manageable responsive layouts
+- preserve campaign creation
+- avoid horizontal overflow where practical
+- maintain minimum touch targets
+
+Do not simply shrink desktop UI.
+
+==================================================
+33. ACCESSIBILITY
+==================================================
+
+Meet sensible WCAG accessibility standards.
+
+Include:
+
+semantic HTML
+keyboard navigation
+visible focus states
+proper labels
+ARIA only when necessary
+sufficient contrast
+accessible modals
+accessible forms
+accessible table controls
+
+Color must never be the only indicator of state.
+
+==================================================
+34. PERFORMANCE
+==================================================
+
+Avoid loading entire contact databases into the browser.
+
+Use:
+
+server pagination
+server filtering
+database indexes
+lazy loading
+code splitting when useful
+
+Search should be debounced.
+
+Tables must remain responsive with thousands of contacts.
+
+Do not create giant frontend state containing every contact.
+
+==================================================
+35. DEMO MODE
+==================================================
+
+The project must be usable during development without real WhatsApp credentials.
+
+Implement safe development/demo behavior.
+
+Local and preview deployments should default to:
+
+WHATSAPP_SEND_ENABLED=false
+
+When sending is disabled:
+
+campaign workflow can be tested
+fake delivery data may be explicitly marked DEMO
+NO real API send request occurs
+
+Production real sending must require an explicit environment configuration.
+
+Never silently fall back from real to fake sending in production.
+
+==================================================
+36. TESTING
+==================================================
+
+Set up automated testing.
+
+Use appropriate tools such as:
+
+Vitest
+React Testing Library
+Playwright if practical
+
+Critical test coverage must include:
+
+phone normalization
+duplicate detection
+consent enforcement
+opt-out enforcement
+CSV parsing
+XLSX mapping logic
+campaign validation
+authorization
+template variable resolution
+webhook signature verification
+webhook idempotency
+message state progression
+campaign idempotency
+retry handling
+scheduled campaign claiming
+
+Do not send real WhatsApp messages during automated tests.
+
+Mock external Meta API calls.
+
+==================================================
+37. QUALITY GATES
+==================================================
+
+Before calling the project complete:
+
+npm install must succeed.
+
+TypeScript must compile without errors.
+
+Production build must succeed.
+
+Tests must pass.
+
+Lint must pass.
+
+No obvious console errors.
+
+No unresolved imports.
+
+No missing components.
+
+No fake buttons.
+
+No TODO placeholders in critical user flows.
+
+No hardcoded secrets.
+
+No broken routes.
+
+No inaccessible modal flows.
+
+No mock analytics in production.
+
+No fake Meta responses in production.
+
+No dependency should be installed without being used.
+
+==================================================
+38. FILE ORGANIZATION
+==================================================
+
+Use a clean architecture.
+
+Suggested organization:
+
+src/
+  app/
+  components/
+  features/
+    dashboard/
+    contacts/
+    campaigns/
+    templates/
+    analytics/
+    settings/
+  hooks/
+  lib/
+  services/
+  types/
+  i18n/
+
+netlify/
+  functions/
+  workloads/
+  database/
+    migrations/
+
+tests/
+
+public/
+
+Do not create giant 1,000-line React components.
+
+Separate:
+
+UI
+business logic
+data access
+API integration
+validation
+
+Use reusable components where reuse is natural.
+
+Do not create abstractions merely for abstraction's sake.
+
+==================================================
+39. IMPORTANT UI COMPONENTS
+==================================================
+
+Build reusable components such as:
+
+AppShell
+Sidebar
+Topbar
+
+PageHeader
+PrimaryButton
+EmptyState
+
+MetricCard
+StatusBadge
+
+DataTable
+FilterBar
+Pagination
+
+ContactImportWizard
+ColumnMapper
+
+CampaignStepper
+AudienceSelector
+TemplateSelector
+MessagePreview
+CampaignReview
+
+ConnectionStatus
+
+ConfirmDialog
+Toast
+Skeleton
+
+Do not build a massive proprietary design system.
+
+Keep it lean.
+
+==================================================
+40. SETTINGS
+==================================================
+
+Settings sections:
+
+General
+WhatsApp Integration
+Users & Roles
+Compliance
+Audit Log
+
+General:
+workspace name
+timezone
+
+WhatsApp Integration:
+connection status
+business account
+phone number
+template synchronization
+test connection
+
+Users & Roles:
+Identity-based users
+role information
+
+Compliance:
+default consent behavior
+opt-out keywords
+campaign confirmation information
+
+Audit Log:
+security-sensitive operations
+
+Do not expose secrets.
+
+==================================================
+41. AUDIT LOG
+==================================================
+
+Record important actions such as:
+
+contact import
+contact consent changed
+contact opted out
+campaign created
+campaign scheduled
+campaign launched
+campaign paused
+campaign resumed
+campaign canceled
+template synchronized
+settings changed
+
+Store:
+
+actor
+action
+entity
+entity ID
+timestamp
+safe metadata
+
+Avoid storing message content unnecessarily if not required.
+
+==================================================
+42. ONBOARDING
+==================================================
+
+For a new workspace show a simple onboarding checklist:
+
+1. Hubungkan WhatsApp Business
+2. Import kontak
+3. Sinkronkan template
+4. Buat campaign pertama
+
+Do not use a long onboarding tour.
+
+Allow dismissal.
+
+==================================================
+43. README
+==================================================
+
+Create an excellent README.md.
+
+It must explain:
+
+What codematt Relay is
+
+Architecture
+
+Requirements
+
+Installation
+
+Local development
+
+Netlify CLI setup
+
+Netlify Identity setup
+
+Netlify Database setup
+
+Database migrations
+
+Async Workloads setup
+
+WhatsApp Cloud API configuration
+
+Environment variables
+
+Webhook configuration
+
+Testing
+
+Production build
+
+Netlify deployment
+
+Troubleshooting
+
+Security notes
+
+Compliance notes
+
+Do not assume the developer remembers previous conversations.
+
+README must allow a new developer to clone the repository and understand how to run the project.
+
+==================================================
+44. NETLIFY DEPLOYMENT
+==================================================
+
+Make the repository deployable to Netlify.
+
+Create correct Netlify configuration.
+
+Ensure:
+
+frontend builds correctly
+functions deploy correctly
+database migrations are available
+SPA navigation works correctly
+environment variables are documented
+scheduled functions deploy correctly
+async workloads are correctly configured
+
+Production must not depend on:
+
+localhost
+local files outside repository
+Windows-specific paths
+an always-running terminal
+a personal laptop
+a traditional VPS
+
+Once deployed, cloud processes must continue without the developer's computer running.
+
+==================================================
+45. DEVELOPMENT EXPERIENCE
+==================================================
+
+The intended developer uses VS Code.
+
+Provide standard scripts:
+
+npm run dev
+npm run build
+npm run test
+npm run lint
+
+Where Netlify services are required, document:
+
+netlify dev
+
+Do not create unnecessary .bat-only workflows.
+
+The project must work through standard npm and Netlify CLI commands.
+
+==================================================
+46. GIT
+==================================================
+
+Prepare a clean Git repository.
+
+Create a proper .gitignore.
+
+Never commit:
+
+.env
+.env.local
+tokens
+database credentials
+Meta secrets
+Netlify secrets
+build caches
+node_modules
+
+Create:
+
+.env.example
+
+Only placeholder values belong in .env.example.
+
+==================================================
+47. PRODUCT POLISH
+==================================================
+
+Small details matter.
+
+Implement:
+
+loading states
+disabled states
+hover states
+focus states
+empty states
+confirmation states
+error states
+success states
+
+Use consistent date formatting.
+
+Use Indonesian number formatting where appropriate.
+
+Phone numbers should be displayed readably while normalized values remain available internally.
+
+Use sensible confirmation language.
+
+Do not clutter the UI with explanatory paragraphs.
+
+Use short helper text when necessary.
+
+==================================================
+48. MVP PRIORITY
+==================================================
+
+If scope becomes too large, prioritize in this exact order:
+
+Authentication
+Database
+Contacts
+Consent
+Import
+Templates
+Campaign Builder
+Queue
+WhatsApp API
+Webhook
+Campaign Status
+Scheduling
+Analytics
+Exports
+UI polish
+
+Do not sacrifice security or compliance for visual features.
+
+==================================================
+49. FEATURES NOT REQUIRED IN MVP
+==================================================
+
+Do NOT spend time implementing these unless everything above is stable:
+
+AI copywriting
+chatbot builder
+shared team inbox
+CRM pipeline
+lead scoring
+Instagram integration
+Facebook Messenger
+email campaigns
+payment system
+mobile native app
+complex automation workflows
+drag-and-drop workflow builder
+
+Architecture may allow future expansion, but do not build them now.
+
+==================================================
+50. ACCEPTANCE CRITERIA
+==================================================
+
+The application is considered ready when:
+
+A user can securely log in.
+
+An admin can import a CSV/XLSX contact list.
+
+Numbers are normalized.
+
+Duplicates are handled.
+
+Contacts without consent are blocked.
+
+Opted-out contacts are blocked.
+
+Tags can be assigned.
+
+WhatsApp templates can be synchronized/viewed.
+
+A user can create a campaign.
+
+The user can choose an audience.
+
+The user can choose a valid template.
+
+Variables resolve correctly.
+
+The user can preview personalized messages.
+
+The system displays eligible and skipped counts.
+
+The user must confirm consent responsibility.
+
+The campaign can be sent immediately or scheduled.
+
+Sending occurs asynchronously.
+
+Thousands of recipients are not processed in one synchronous browser request.
+
+Failures are isolated.
+
+Temporary failures can retry safely.
+
+Duplicate worker executions do not produce duplicate sends.
+
+WhatsApp webhooks update message statuses.
+
+Campaign analytics reflect real provider events.
+
+A campaign can be paused/resumed where operationally possible.
+
+The UI remains responsive.
+
+The project successfully builds for Netlify.
+
+No traditional VPS is required.
+
+No unofficial WhatsApp automation is used.
+
+No secrets are exposed.
+
+==================================================
+51. IMPLEMENTATION METHOD
+==================================================
+
+Do not generate the entire application blindly in one giant uncontrolled code dump.
+
+Work systematically.
+
+First:
+
+inspect requirements
+design architecture
+design database schema
+design routes
+design folder structure
+design main UI shell
+
+Then implement the project in logical phases.
+
+However, do not ask unnecessary clarification questions.
+
+When a requirement has a sensible safe default, choose it and document the assumption.
+
+Do not invent API credentials.
+
+Do not fake third-party integration success.
+
+If WhatsApp credentials are unavailable:
+build the real integration layer,
+provide demo mode,
+document exactly where credentials will later be added.
+
+After every implementation phase:
+
+run type checking
+run lint
+run tests
+run production build
+fix all errors before continuing
+
+Never knowingly leave the repository in a broken state.
+
+==================================================
+52. FINAL DELIVERY
+==================================================
+
+At completion provide:
+
+1. Finished source code.
+2. Database migrations.
+3. Netlify configuration.
+4. .env.example.
+5. README.md.
+6. Local setup instructions.
+7. WhatsApp Cloud API setup instructions.
+8. Netlify deployment instructions.
+9. Testing instructions.
+10. Security/compliance notes.
+
+Also provide a short implementation report containing:
+
+Implemented
+Tested
+Requires external configuration
+Future improvements
+
+Do not claim functionality was tested if it was not actually tested.
+
+Do not claim the WhatsApp API is connected without valid credentials.
+
+==================================================
+53. FINAL PRINCIPLE
+==================================================
+
+codematt Relay should feel like:
+
+"Broadcast software that does not feel like enterprise software."
+
+The ideal workflow is:
+
+Import
+→ Segment
+→ Template
+→ Preview
+→ Send
+→ Understand results
+
+Simple on the surface.
+Reliable underneath.
+Compliant by design.
+
+Build the smallest production-quality system that satisfies these requirements.
+
+Do not add complexity merely because it is technically possible.
+
+Begin by presenting the proposed architecture, database model, routes, and implementation phases.
+
+Then start Phase 1 only after verifying the planned stack is currently compatible with Netlify.
