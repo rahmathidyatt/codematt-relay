@@ -1,7 +1,7 @@
 {
   "name": "codematt-relay",
-  "version": "0.3.0",
-  "description": "codematt Relay \u2014 templates, audiences and campaign drafts",
+  "version": "0.4.0",
+  "description": "codematt Relay \u2014 campaign queue, scheduling and delivery webhooks",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
@@ -17,6 +17,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@netlify/async-workloads": "0.0.106",
     "@netlify/database": "2.0.1",
     "@netlify/identity": "2.0.0",
     "@tailwindcss/vite": "4.3.3",

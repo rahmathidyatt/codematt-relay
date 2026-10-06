@@ -5,10 +5,12 @@ import { success, failure } from '../lib/http.ts';
 import { fromPool } from '../lib/db.ts';
 import { contactRoute, handleContacts, rateLimit, sameOrigin } from '../lib/contact-api.ts';
 import { campaignRoute, handleCampaigns } from '../lib/campaign-api.ts';
+import { deliveryRoute,handleDelivery } from '../lib/delivery-api.ts';
+import { deliveryConfig } from '../lib/delivery-config.ts';
 import { InputError } from '../../src/features/contacts/validation.ts';
 export default async function handler(request: Request): Promise<Response> {
   const url=new URL(request.url);url.pathname=url.pathname.replace(/^\/\.netlify\/functions\/api/,'/api');
-  const path=url.pathname;const isContacts=contactRoute(path);const isCampaigns=campaignRoute(path);
+  const path=url.pathname;const isContacts=contactRoute(path);const isDelivery=deliveryRoute(path);const isCampaigns=campaignRoute(path)||isDelivery;
   if(!isContacts&&!isCampaigns&&!['/api/session','/api/dashboard','/api/settings'].includes(path))return failure(404,'NOT_FOUND','Endpoint tidak ditemukan.');
   if(!isContacts&&!isCampaigns&&request.method!=='GET')return failure(405,'METHOD_NOT_ALLOWED','Metode tidak didukung.');
   try {
@@ -20,11 +22,11 @@ export default async function handler(request: Request): Promise<Response> {
     const {pool}=getDatabase();
     if(isContacts||isCampaigns) {
       const db=fromPool(pool);await rateLimit(db,user.id);
-      return isCampaigns?await handleCampaigns(new Request(url,request),db,user.id):await handleContacts(new Request(url,request),db,user.id);
+      return isDelivery?await handleDelivery(new Request(url,request),db,user.id):isCampaigns?await handleCampaigns(new Request(url,request),db,user.id):await handleContacts(new Request(url,request),db,user.id);
     }
     if(path==='/api/settings') {
       const result=await pool.query('SELECT workspace_name,timezone,opt_out_keywords FROM app_settings WHERE id=true');
-      return success({...result.rows[0],sendingAvailable:false,integration:'not_configured'});
+      return success({...result.rows[0],sendingAvailable:!!deliveryConfig(),integration:deliveryConfig()?'configured':'sending_disabled'});
     }
     const result=await pool.query(`SELECT (SELECT count(*)::int FROM contacts WHERE archived_at IS NULL) AS contacts,(SELECT count(*)::int FROM campaigns) AS campaigns,(SELECT count(*)::int FROM templates) AS templates`);
     return success(result.rows[0]);

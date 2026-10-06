@@ -4,7 +4,7 @@ export const id = {
   welcome: 'Komunikasi yang lebih terarah.',
   intro: 'Mulai dari audience yang tepat. Kirim dengan persetujuan.',
   demo: 'DEMO LOKAL · Data contoh tersimpan di komputer ini, tanpa pengiriman pesan',
-  foundation: 'Phase 3 · Templates & campaign drafts',
+  foundation: 'Phase 4 · Queue, delivery & webhooks',
   loginTitle: 'Selamat datang kembali.', loginInfo: 'Masuk dengan akun yang telah diundang ke workspace Anda.',
   email: 'Email', password: 'Kata sandi', login: 'Masuk ke Relay', logout: 'Keluar', loading: 'Memuat…',
   preview: 'Lihat preview lokal', invitation: 'Buat kata sandi akun', recovery: 'Atur ulang kata sandi',
@@ -12,7 +12,7 @@ export const id = {
   retry: 'Coba lagi', dashboard: 'Ringkasan workspace', start: 'Persiapan workspace',
   steps: ['Hubungkan WhatsApp Business', 'Import kontak beserta persetujuan', 'Sinkronkan template', 'Buat campaign pertama'],
   integration: 'WhatsApp Business', disconnected: 'Belum terhubung',
-  integrationInfo: 'Sinkronisasi template tersedia di Templates. Pengiriman pesan tersedia pada Phase 4.',
+  integrationInfo: 'Sinkronisasi template tersedia di Templates. Pengiriman memerlukan aktivasi server dan konfirmasi campaign.',
   noCampaign: 'Belum ada campaign.', noCampaignInfo: 'Siapkan dan lanjutkan draft melalui halaman Campaigns.',
   roadmap: 'Tahap pengembangan', unavailable: 'Modul ini tersedia pada fase berikutnya.',
   modules: [

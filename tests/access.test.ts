@@ -47,7 +47,7 @@ describe('API trust boundaries', () => {
   });
   it('denies viewer campaign data and operator template sync before touching database', async () => {
     mocks.getUser.mockResolvedValue({id:'v',roles:['viewer']});
-    for(const route of ['campaigns','templates','campaigns/preview'])expect((await handler(new Request('https://relay.example/api/'+route))).status).toBe(403);
+    for(const route of ['campaigns','templates','campaigns/preview','campaigns/00000000-0000-4000-8000-000000000001/review','campaigns/00000000-0000-4000-8000-000000000001/launch','campaigns/00000000-0000-4000-8000-000000000001/delivery'])expect((await handler(new Request('https://relay.example/api/'+route))).status).toBe(403);
     mocks.getUser.mockResolvedValue({id:'o',roles:['operator']});
     expect((await handler(new Request('https://relay.example/api/templates/sync',{method:'POST',headers:{Origin:'https://relay.example'}}))).status).toBe(403);
     expect(mocks.getDatabase).not.toHaveBeenCalled();

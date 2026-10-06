@@ -29,3 +29,13 @@ it('exercises template samples and persistent draft APIs without any provider ca
  const summary=await(await fetch(base+'/__demo/api/dashboard')).json();expect(summary.data.campaigns).toBe(1);expect(summary.data.templates).toBe(4);
  const send=await fetch(base+'/__demo/api/campaigns/send',{method:'POST',headers});expect(send.status).toBe(404);
 },30000);
+it('exercises launch, queued simulation, callback statuses and monitor over HTTP',async()=>{
+ const headers={Origin:base,'Content-Type':'application/json'};
+ async function post(path:string,body:object){const r=await fetch(base+'/__demo/api/'+path,{method:'POST',headers,body:JSON.stringify(body)});const result=await r.json();expect(r.status,result.error?.message).toBe(200);return result.data;}
+ await post('templates/sync',{});const templates=await(await fetch(base+'/__demo/api/templates')).json();const template=templates.data.items.find((t:{name:string})=>t.name==='contoh_update');
+ const contact=await post('contacts',{name:'Delivery HTTP',phone:'081234567877',consent_status:'active',consent_source:'Fixture form',consent_at:'2026-01-01'});
+ const campaign=await post('campaigns',{id:crypto.randomUUID(),name:'HTTP launch',template_id:template.id,audience_rules:{mode:'manual',ids:[contact.id],tags:[],q:'',match:'any'},variable_mapping:{'BODY:nama':{source:'name'},'BODY:informasi':{source:'literal',value:'Latihan'}}});
+ const review=(await(await fetch(base+`/__demo/api/campaigns/${campaign.id}/review`)).json()).data;await post(`campaigns/${campaign.id}/launch`,{version:review.version,review_hash:review.hash,confirmed:true,timezone:'Asia/Jakarta'});await post('demo/tick',{campaign_id:campaign.id});
+ let detail=(await(await fetch(base+`/__demo/api/campaigns/${campaign.id}/delivery`)).json()).data;expect(detail.counts.accepted).toBe(1);await post('demo/event',{campaign_id:campaign.id,recipient_id:detail.items[0].id,status:'delivered'});
+ detail=(await(await fetch(base+`/__demo/api/campaigns/${campaign.id}/delivery`)).json()).data;expect(detail.counts.delivered).toBe(1);
+},30000);

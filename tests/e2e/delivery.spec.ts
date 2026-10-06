@@ -1,0 +1,14 @@
+import {test,expect} from '@playwright/test';
+test('phase 4 local confirmation, pause, resume, simulated delivery, and mobile monitor',async({page,request})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));const headers={Origin:'http://127.0.0.1:5180'};
+ await request.post('/__demo/api/reset',{headers,data:{confirmed:true}});await request.post('/__demo/api/templates/sync',{headers});
+ const contact=await(await request.post('/__demo/api/contacts',{headers,data:{name:'Penerima Simulasi',phone:'081234567866',consent_status:'active',consent_source:'Form demo',consent_at:'2026-01-01'}})).json();
+ const templates=await(await request.get('/__demo/api/templates')).json();const t=templates.data.items.find((x:{name:string})=>x.name==='contoh_update');
+ await request.post('/__demo/api/campaigns',{headers,data:{id:crypto.randomUUID(),name:'Antrean Phase 4',template_id:t.id,audience_rules:{mode:'manual',ids:[contact.data.id],tags:[],q:'',match:'any'},variable_mapping:{'BODY:nama':{source:'name'},'BODY:informasi':{source:'literal',value:'Tes antrean lokal'}}}});
+ await page.goto('/');await page.getByRole('button',{name:'Lihat preview lokal'}).click();await page.getByRole('link',{name:'Campaigns',exact:true}).click();await page.getByRole('button',{name:'Tinjau & kirim',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Mulai simulasi',exact:true})).toBeDisabled();await page.getByLabel('Saya memastikan penerima telah memberi persetujuan').check();await page.getByRole('button',{name:'Mulai simulasi',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Pause',exact:true})).toBeVisible();await page.getByRole('button',{name:'Pause',exact:true}).click();await page.getByRole('button',{name:'Konfirmasi pause',exact:true}).click();await expect(page.getByRole('button',{name:'Resume',exact:true})).toBeVisible();await page.getByRole('button',{name:'Resume',exact:true}).click();await page.getByRole('button',{name:'Konfirmasi resume',exact:true}).click();
+ await page.getByRole('button',{name:'Proses 1 batch simulasi',exact:true}).click();await expect(page.getByRole('cell',{name:'Diterima adapter demo',exact:true})).toBeVisible();
+ await page.getByText('Simulasi webhook dan opt-out',{exact:true}).click();await page.getByLabel('Penerima pada halaman ini').selectOption({label:'Penerima Simulasi'});await page.getByLabel('Event',{exact:true}).selectOption('read');await page.getByRole('button',{name:'Terapkan event simulasi',exact:true}).click();await expect(page.getByRole('cell',{name:'Dibaca',exact:true})).toBeVisible();
+ await page.screenshot({path:'test-results/delivery-desktop.png',fullPage:true});await page.setViewportSize({width:390,height:844});await page.screenshot({path:'test-results/delivery-mobile.png',fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);expect(errors).toEqual([]);
+});

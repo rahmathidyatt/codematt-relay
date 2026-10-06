@@ -4,7 +4,7 @@ import type {Contact} from '../../src/features/contacts/types.ts';
 import {validateAudience,validateMapping,mappingIssues,renderMessage,type Audience,type Mapping,type Counts,type Campaign,type Template} from '../../src/features/campaigns/model.ts';
 import {decorateTemplate} from './templates.ts';
 export function draftInput(raw:unknown) {
- const b=object(raw);if(Object.keys(b).some(k=>!['id','version','name','template_id','audience_rules','variable_mapping'].includes(k)))throw new InputError('Hanya draft yang dapat disimpan; pengiriman belum tersedia.');
+ const b=object(raw);if(Object.keys(b).some(k=>!['id','version','name','template_id','audience_rules','variable_mapping'].includes(k)))throw new InputError('Hanya draft yang dapat disimpan melalui endpoint ini.');
  if(b.version!==undefined&&(!Number.isSafeInteger(b.version)||Number(b.version)<1))throw new InputError('Versi draft tidak valid.');
  return {id:uuid(b.id),version:b.version as number|undefined,name:text(b.name,'Nama campaign'),template_id:b.template_id?uuid(b.template_id):null,audience_rules:validateAudience(b.audience_rules),variable_mapping:validateMapping(b.variable_mapping)};
 }
@@ -15,7 +15,7 @@ export async function audienceContacts(db:Query,a:Audience) {
   if(a.tags.length){const p=add(a.tags);clauses.push(a.match==='all'?`(SELECT count(DISTINCT t.name) FROM contact_tags ct JOIN tags t ON t.id=ct.tag_id WHERE ct.contact_id=c.id AND t.name=ANY(${p}::text[]))=cardinality(${p}::text[])`:`EXISTS(SELECT 1 FROM contact_tags ct JOIN tags t ON t.id=ct.tag_id WHERE ct.contact_id=c.id AND t.name=ANY(${p}::text[]))`);}
   if(a.q){const p=add('%'+a.q.replace(/[\\%_]/g,'\\$&')+'%');clauses.push(`(c.name ILIKE ${p} OR c.phone_e164 ILIKE ${p})`);}
  }
- const rows=(await db.query<Contact>(`SELECT c.* FROM contacts c ${clauses.length?'WHERE '+clauses.join(' AND '):''} ORDER BY c.id LIMIT 10001`,params)).rows;
+ const rows=(await db.query<Contact>(`SELECT c.*,GREATEST(c.opted_out_at,(SELECT s.opted_out_at FROM contact_suppressions s WHERE s.phone_e164=c.phone_e164)) AS opted_out_at FROM contacts c ${clauses.length?'WHERE '+clauses.join(' AND '):''} ORDER BY c.id LIMIT 10001`,params)).rows;
  if(rows.length>10000)throw new InputError('Audience melebihi 10.000 kontak. Persempit segmen terlebih dahulu.');
  const counts:Counts={selected:rows.length,eligible:0,archived:0,no_consent:0,opted_out:0,invalid:0,missing:a.mode==='manual'?a.ids.length-rows.length:0};counts.selected+=counts.missing;
  const contacts:Contact[]=[];

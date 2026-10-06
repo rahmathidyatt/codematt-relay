@@ -4,6 +4,8 @@ import {PGlite} from '@electric-sql/pglite';
 import type {Database} from '../netlify/lib/db.ts';
 import {handleContacts,contactRoute,jsonBody} from '../netlify/lib/contact-api.ts';
 import {handleCampaigns,campaignRoute} from '../netlify/lib/campaign-api.ts';
+import {deliveryRoute,handleDelivery} from '../netlify/lib/delivery-api.ts';
+import {handleDemoDelivery} from './delivery-demo.ts';
 import {failure,success} from '../netlify/lib/http.ts';
 import {InputError} from '../src/features/contacts/validation.ts';
 let pending:Promise<Database>|undefined;
@@ -40,6 +42,8 @@ export function demoPlugin():Plugin {
         const path=new URL(request.url).pathname;
         let response:Response;
         if(contactRoute(path))response=await handleContacts(request,await database(),'local-demo');
+        else if(deliveryRoute(path))response=await handleDelivery(request,await database(),'local-demo',true);
+        else if(['/api/demo/tick','/api/demo/event'].includes(path))response=await handleDemoDelivery(request,await database());
         else if(campaignRoute(path))response=await handleCampaigns(request,await database(),'local-demo',true);
         else if(path==='/api/dashboard'&&method==='GET') {
           const result=await(await database()).query<{contacts:number;campaigns:number;templates:number}>('SELECT (SELECT count(*)::int FROM contacts WHERE archived_at IS NULL) AS contacts,(SELECT count(*)::int FROM campaigns) AS campaigns,(SELECT count(*)::int FROM templates) AS templates');
@@ -47,7 +51,7 @@ export function demoPlugin():Plugin {
         } else if(path==='/api/reset'&&method==='POST') {
           if(headers.get('origin')!==origin)throw new InputError('Asal permintaan tidak valid.');
           const value=await jsonBody(request) as {confirmed?:boolean};if(value.confirmed!==true)throw new InputError('Konfirmasi terlebih dahulu.');
-          await(await database()).query('TRUNCATE campaigns,templates,import_chunks,import_jobs,consent_events,contact_tags,contacts,tags,audit_logs CASCADE');await(await database()).query('UPDATE template_sync_state SET source_waba=NULL,synced_at=NULL');response=success({cleared:true});
+          await(await database()).query('TRUNCATE contact_suppressions,webhook_events,message_events,campaigns,templates,import_chunks,import_jobs,consent_events,contact_tags,contacts,tags,audit_logs CASCADE');await(await database()).query('UPDATE template_sync_state SET source_waba=NULL,synced_at=NULL');await(await database()).query('UPDATE delivery_control SET lease_token=NULL,lease_expires_at=NULL,next_send_at=now(),last_scheduler_at=NULL,last_worker_at=NULL,last_webhook_at=NULL');response=success({cleared:true});
         } else response=failure(404,'NOT_FOUND','Endpoint demo tidak ditemukan.');
         res.statusCode=response.status;response.headers.forEach((v,k)=>res.setHeader(k,v));res.end(await response.text());
       }catch(e){const response=e instanceof InputError?failure(e.status,e.code,e.message):e&&typeof e==='object'&&'code'in e&&e.code==='23505'?failure(409,'DUPLICATE_PHONE','Nomor sudah tersimpan. Data lama tidak diubah.'):failure(503,'DEMO_ERROR','Demo belum siap. Hentikan server lain yang memakai folder proyek ini, lalu coba lagi.');res.statusCode=response.status;res.setHeader('Content-Type','application/json');res.end(await response.text());}

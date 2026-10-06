@@ -1,10 +1,10 @@
-# codematt Relay — Phase 3
+# codematt Relay — Phase 4
 
 Send clearly. Reach responsibly.
 
-Phase 2 provides contact management, consent evidence/history, tag filters, CSV/XLSX import, archive/restore, filtered CSV exports and a persistent local demo. It includes Phase 1 authentication, database and dashboard foundations. Phase 3 adds official template synchronization, audience selection, variable mapping, personalized preview and persistent campaign drafts. WhatsApp sending, webhook, scheduling and delivery analytics are future phases. **No real message can be sent by this release.**
+Phase 2 provides contact management, consent evidence/history, tag filters, CSV/XLSX import, archive/restore, filtered CSV exports and a persistent local demo. It includes Phase 1 authentication, database and dashboard foundations. Phase 3 adds official template synchronization, audience selection, variable mapping, personalized preview and persistent campaign drafts. Phase 4 adds the official Cloud API adapter, durable queue, scheduling, test sends, signed status/opt-out webhooks and campaign controls. **Real sending is disabled by default.** Local demo never calls Meta. Advanced reporting remains Phase 5.
 
-Indonesian VS Code and upgrade instructions: **[docs/PHASE-3-GUIDE-ID.md](docs/PHASE-3-GUIDE-ID.md)** (Phase 2 contact/import guide is also included)..
+Indonesian VS Code and upgrade instructions: **[docs/PHASE-4-GUIDE-ID.md](docs/PHASE-4-GUIDE-ID.md)**. Historical Phase 2–3 guides are also included.
 
 ## Quick start
 
@@ -19,11 +19,13 @@ Open the printed loopback URL, select **Lihat preview lokal**, then **Templates 
 
 Example imports are in `examples/`. All example names/numbers are test data with unknown consent, not real authorized recipients. Database contents and uploaded source files are not bundled.
 
+After saving a demo draft, choose **Tinjau & kirim → Mulai simulasi** and open the monitor. **Proses 1 batch simulasi** processes up to five recipients; simulated webhook buttons update delivery or opt-out evidence. Demo scheduling advances only when a batch is requested after its due time. No email/password is needed for local preview; real login uses an invited Identity account.
+
 ## Implemented
 
 - Official Meta template sync with provider status, provenance, complete-result atomic updates, bounded cursor pagination and supported-component validation. Only admins can sync; credentials stay on the server.
 - Template catalogue/details and explicit sample data for local demo. No fake approval in production.
-- Campaign drafts with all/segment/manual audience, eligibility counts, named/positional variable mapping, personalized previews, version conflict protection and persistence. No sending or scheduling.
+- Campaign drafts with all/segment/manual audience, eligibility counts, named/positional variable mapping, personalized previews, version conflict protection and persistence. Launch review, scheduled delivery, separate one-contact test campaigns, and pause/resume/cancel controls are now included.
 
 - Contact creation and name/tag editing, normalization to E.164 with libphonenumber-js, duplicate number protection.
 - Database pagination, name/phone search, tag/consent/archive filtering and sorting.
@@ -60,10 +62,13 @@ React / TypeScript / Vite / Tailwind + Netlify Functions + Netlify Identity + Ne
 | /api/campaigns | GET, POST (save draft) | Admin / operator |
 | /api/campaigns/:id | GET | Admin / operator |
 | /api/campaigns/preview | POST | Admin / operator |
+| /api/campaigns/:id/review, /api/campaigns/:id/delivery | GET | Admin / operator |
+| /api/campaigns/:id/{launch,test,pause,resume,cancel} | POST | Admin / operator |
+| /api/webhooks/whatsapp | GET handshake, POST events | Verify token / signed Meta payload |
 
 All production contact/import/template/campaign routes first verify Identity and trusted roles. Mutation requests require a matching Origin and JSON Content-Type. Body limit is 256 KiB and rate limit is 180 contact/template/campaign requests per minute per actor. No secrets or raw source files are logged. Responses are not cached. Unknown API routes return JSON 404.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for tables and future delivery design, and [docs/REQUIREMENTS.txt](docs/REQUIREMENTS.txt) for the original specification.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for tables and delivery semantics, and [docs/REQUIREMENTS.txt](docs/REQUIREMENTS.txt) for the original specification.
 
 ## Full Netlify setup
 
@@ -82,29 +87,35 @@ Netlify Database requires a compatible credit-based plan. Cloud account configur
 
 ## Database migrations
 
-Keep all three migrations under `netlify/database/migrations/`:
+Keep all four migrations under `netlify/database/migrations/`:
 
 1. `0001_foundation.sql` — unchanged Phase 1 schema.
 2. `0002_contacts_imports.sql` — contact versions, import batch results/counters, rate buckets and indexes.
 3. `0003_campaign_drafts.sql` — template provenance/sync state, audience rules and draft versions.
+4. `0004_delivery.sql` — delivery snapshots, outbox leases/generations, global worker control and phone suppressions.
 
 Netlify's native migration lifecycle applies pending files. Do not run already-applied migrations manually or edit their contents after use. Test the deployment against a preview database before production. Local demo creates/applies these migrations automatically in its own directory; tests execute them with PGlite. Managed Netlify PostgreSQL remains a separate deployment smoke test.
 
 ## Environment and secrets
 
-`.env.example` declares server-only Meta credentials. Phase 3 uses the access token, business account ID and explicit API version to read templates only. It never sends a message, even if `WHATSAPP_SEND_ENABLED` is set true. Keep it false. Never prefix credentials with VITE_, commit `.env`, or place credentials in browser storage. Use Netlify Functions runtime environment variables for real synchronization; local demo always uses samples.
+`.env.example` declares server-only configuration. Never prefix secrets with VITE_, commit `.env`, or place credentials in browser storage. Live sending requires `WHATSAPP_SEND_ENABLED=true`, `RELAY_ASYNC_READY=true`, Netlify's production runtime context, and complete Meta configuration. Keep both flags false until the integration is configured and ready for an intentional test send.
 
 | Variable | Purpose |
 | --- | --- |
-| WHATSAPP_SEND_ENABLED | Explicit production send gate; false now |
+| WHATSAPP_SEND_ENABLED | Explicit production send gate, default false |
+| RELAY_ASYNC_READY | Operator confirmation of configured Async Workloads, default false |
 | WHATSAPP_ACCESS_TOKEN | Official Cloud API token |
 | WHATSAPP_PHONE_NUMBER_ID | Sender identifier |
 | WHATSAPP_BUSINESS_ACCOUNT_ID | Template account identifier |
-| WHATSAPP_VERIFY_TOKEN | Webhook verification secret |
+| WHATSAPP_VERIFY_TOKEN | Webhook handshake secret |
 | META_APP_SECRET | Webhook HMAC verification |
-| WHATSAPP_API_VERSION | Explicitly verified supported Graph API version |
+| WHATSAPP_API_VERSION | Explicit supported Graph API version |
+| RELAY_SEND_INTERVAL_MS | Workspace send interval, default 2000 ms |
+| RELAY_BATCH_SIZE | Recipients per worker invocation, default 5 |
 
-Async Workloads and Scheduled Functions are planned for Phase 4. Their extension/worker/webhook are not installed or configured yet. Do not subscribe Meta webhooks to this version.
+Install/configure the Netlify Async Workloads extension on the intended account; the SDK dependency alone does not activate it. The included scheduler runs every minute and publishes durable outbox events. Configure Meta's signed webhook at `/api/webhooks/whatsapp`. Follow the complete activation and test checklist in the Phase 4 guide before enabling live sends. Configuration indicators do not verify account connectivity.
+
+Accepted means the provider returned a message ID, not delivered. Timeout/ambiguous results become uncertain and are never automatically resent. Consent and template usability are rechecked before each send. Pause/cancel cannot recall a request already handed to the provider. The monitor exposes these distinctions.
 
 ## Import limits and resume semantics
 
@@ -134,8 +145,10 @@ netlify deploy --build
 
 Review the draft, configure Identity/Database, and verify the integration before intentionally publishing with `netlify deploy --build --prod`. No publishing has been done on your behalf.
 
-Required cloud smoke checks: anonymous API access is rejected; viewer contact access is forbidden; admin/operator can create/edit/import; cross-origin mutations are rejected; all three migrations apply; auth invite/login/recovery work; a duplicate import preserves opt-out; page reload routes work. Passing local checks is not proof these cloud checks passed.
+Required cloud smoke checks: anonymous API access is rejected; viewer contact access is forbidden; admin/operator can create/edit/import; cross-origin mutations are rejected; all four migrations apply; auth invite/login/recovery work; a duplicate import preserves opt-out; page reload routes work. Passing local checks is not proof these cloud checks passed.
 
-## Next phase
+## Verification result and next phase
 
-Phase 4: official sending, launch and per-recipient revalidation, durable outbox/queue, scheduler, signed webhooks and opt-out processing. Phase 5 adds reporting and release validation. See the Phase 3 guide for supported formats, limits and the actual verification report.
+Phase 4 local checks passed: TypeScript, ESLint, 71 tests in 8 files and production build. Browser launch failed before UI steps; visual verification and real Netlify/Meta integration remain unverified. See [docs/IMPLEMENTATION-REPORT.md](docs/IMPLEMENTATION-REPORT.md).
+
+Phase 5: event-derived analytics, reports/exports, audit browsing and release validation.

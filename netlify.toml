@@ -11,6 +11,11 @@
   targetPort = 5173
   port = 8888
 [[redirects]]
+  from = "/api/webhooks/whatsapp"
+  to = "/.netlify/functions/whatsapp-webhook"
+  status = 200
+  force = true
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200

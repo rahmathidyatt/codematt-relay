@@ -31,7 +31,7 @@ export function templateShape(t:Pick<Template,'components'|'parameter_format'|'c
   if(seen.has(c.type))return {variables,reason:'Komponen template berulang.'};seen.add(c.type);
   if(c.type==='BODY')bodies++;
   if(['BODY','HEADER','FOOTER'].includes(c.type)) {
-   if(c.type==='HEADER'&&c.format!=='TEXT')return {variables,reason:'Header media/lokasi belum didukung pada Phase 3.'};
+   if(c.type==='HEADER'&&c.format!=='TEXT')return {variables,reason:'Header media/lokasi belum didukung pada rilis ini.'};
    if(typeof c.text!=='string'||!c.text)return {variables,reason:'Konten teks tidak lengkap.'};
    const matches=[...c.text.matchAll(/{{\s*([^{}]+?)\s*}}/g)];
    if(c.text.replace(/{{\s*([^{}]+?)\s*}}/g,'').includes('{{')||c.text.replace(/{{\s*([^{}]+?)\s*}}/g,'').includes('}}'))return {variables,reason:'Placeholder template tidak valid.'};
@@ -42,7 +42,7 @@ export function templateShape(t:Pick<Template,'components'|'parameter_format'|'c
    variables.push(...tokens.map(v=>`${c.type}:${v}`));
   } else if(c.type==='BUTTONS') {
    if(!c.buttons?.length||c.buttons.some(b=>!['QUICK_REPLY','URL','PHONE_NUMBER'].includes(b.type)||!b.text||/({{|}})/.test(JSON.stringify(b))))return {variables,reason:'Tombol dinamis atau jenis tombol ini belum didukung.'};
-  } else return {variables,reason:'Jenis komponen ini belum didukung pada Phase 3.'};
+  } else return {variables,reason:'Jenis komponen ini belum didukung pada rilis ini.'};
  }
  return {variables,reason:bodies!==1?'Template harus memiliki satu body.':variables.length>100?'Terlalu banyak variabel.':''};
 }

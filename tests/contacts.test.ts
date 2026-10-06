@@ -1,5 +1,5 @@
 import {PGlite} from '@electric-sql/pglite';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';
 import type {Database} from '../netlify/lib/db';
@@ -8,7 +8,7 @@ import {createImport,importChunk,getImport} from '../netlify/lib/imports';
 import {jsonBody,sameOrigin,rateLimit} from '../netlify/lib/contact-api';
 import {eligible,normalizePhone,validateDraft,consentDate} from '../src/features/contacts/validation';
 let pg:PGlite,db:Database;
-beforeAll(async()=>{pg=new PGlite();db=pg as unknown as Database;await pg.exec(readFileSync('netlify/database/migrations/0001_foundation.sql','utf8'));await pg.exec(readFileSync('netlify/database/migrations/0002_contacts_imports.sql','utf8'));},30000);
+beforeAll(async()=>{pg=new PGlite();db=pg as unknown as Database;for(const p of readdirSync('netlify/database/migrations').filter(p=>p.endsWith('.sql')).sort())await pg.exec(readFileSync('netlify/database/migrations/'+p,'utf8'));},30000);
 afterAll(()=>pg.close());
 const sample=(phone:string)=>({name:'Kontak Uji',phone,tags:['Training','training'],consent_status:'unknown'});
 describe('contact validation',()=>{

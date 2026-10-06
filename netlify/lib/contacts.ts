@@ -66,9 +66,12 @@ export async function exportContacts(db:Database,params:URLSearchParams) {
 }
 export async function insertContact(tx:Query,value:unknown,actor:string,skipDuplicate=false) {
   const data=validateDraft(value);
+  const suppression=(await tx.query<{opted_out_at:string}>('SELECT opted_out_at FROM contact_suppressions WHERE phone_e164=$1',[data.phone_e164])).rows[0];
+  if(suppression&&data.consent_status==='active'&&new Date(data.consent_at!)<=new Date(suppression.opted_out_at))throw new InputError('Nomor pernah opt-out melalui WhatsApp. Diperlukan bukti persetujuan yang lebih baru.');
+  if(suppression&&data.consent_status!=='active'&&(!data.consent_at||new Date(data.consent_at)<new Date(suppression.opted_out_at))){data.consent_status='revoked';data.consent_at=new Date(suppression.opted_out_at).toISOString();data.consent_source='WhatsApp inbound opt-out';}
   const result=await tx.query<{id:string}>(`INSERT INTO contacts(name,phone_e164,consent_status,consent_source,consent_at,opted_out_at,opt_out_source)
     VALUES($1,$2,$3,$4,$5,$6,$7) ${skipDuplicate?'ON CONFLICT(phone_e164) DO NOTHING':''} RETURNING id`,
-    [data.name,data.phone_e164,data.consent_status,data.consent_status==='active'?data.consent_source:null,data.consent_status==='active'?data.consent_at:null,data.consent_status==='revoked'?data.consent_at:null,data.consent_status==='revoked'?data.consent_source:null]);
+    [data.name,data.phone_e164,data.consent_status,data.consent_status==='active'?data.consent_source:null,data.consent_status==='active'?data.consent_at:null,data.consent_status==='revoked'?data.consent_at:suppression?.opted_out_at??null,data.consent_status==='revoked'?data.consent_source:suppression?'WhatsApp inbound opt-out':null]);
   const id=result.rows[0]?.id;if(!id)return null;
   await assignTags(tx,id,data.tags);
   if(data.consent_status!=='unknown') await tx.query('INSERT INTO consent_events(contact_id,status,source,occurred_at,actor) VALUES($1,$2,$3,$4,$5)',[id,data.consent_status,data.consent_source,data.consent_at,actor]);
@@ -95,6 +98,8 @@ export async function changeConsent(db:Database,id:string,value:unknown,actor:st
   const at=status==='active'?consentDate(body.occurred_at):new Date().toISOString();
   return db.transaction(async tx=>{
     const contact=await lockContact(tx,id,body.version);
+    const suppression=(await tx.query<{opted_out_at:string}>('SELECT opted_out_at FROM contact_suppressions WHERE phone_e164=$1',[contact.phone_e164])).rows[0];
+    if(status==='active'&&suppression&&new Date(at)<=new Date(suppression.opted_out_at))throw new InputError('Bukti persetujuan harus lebih baru daripada opt-out WhatsApp.');
     if(status==='active'&&(contact.archived_at || (contact.opted_out_at && Date.parse(at)<=new Date(contact.opted_out_at).getTime()) || (contact.consent_at && Date.parse(at)<new Date(contact.consent_at).getTime()))) {
       throw new InputError('Pulihkan kontak dari arsip dan gunakan persetujuan baru yang lebih baru daripada opt-out / bukti sebelumnya.');
     }

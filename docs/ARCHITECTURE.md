@@ -1,11 +1,11 @@
 # codematt Relay — architecture and phased delivery
 
-Status: Phase 3 templates and campaign drafts implemented. Campaign delivery is not yet implemented.
+Status: Phase 4 delivery implemented and locally tested. Live cloud integration and browser verification remain outstanding.
 
 ## Boundaries
 One Netlify site represents one workspace. Every signed-in user must have a trusted Identity role: admin, operator, or viewer. Unknown roles have no access. Multi-workspace hosting requires a separate tenant isolation design before implementation. Credentials stay in Functions environment variables; there is no public registration UI. Identity must be configured Invite Only at the provider.
 
-React + TypeScript + Vite -> authenticated Netlify Functions -> PostgreSQL. Later: transactional outbox -> Netlify Async Workloads -> official WhatsApp Cloud API. Signed webhooks update database events and aggregate statuses. The browser never receives Meta credentials or loops over recipients to send.
+React + TypeScript + Vite -> authenticated Netlify Functions -> PostgreSQL. Transactional outbox -> Netlify Async Workloads -> official WhatsApp Cloud API. Signed webhooks update database events and aggregate statuses. The browser never receives Meta credentials or loops over recipients to send.
 
 ## Data model
 - contacts: unique normalized E.164 phone, current consent evidence, opt-out and archive timestamps.
@@ -25,7 +25,7 @@ Exactly-once external delivery cannot be assumed. A database unique key alone do
 
 At launch: validate role, explicit consent confirmation, fresh usable template, all variable mappings, audience, and future schedule. In one database transaction freeze recipient identities and enqueue outbox intent. Immediately before each delivery, recheck consent, archive status, opt-out, template status, and campaign pause/cancel state. Queued -> dispatching -> accepted -> sent -> delivered -> read. `accepted` means an API message ID exists; it is not proof of delivery. Provider events are authoritative for sent/delivered/read. Completion of dispatch and completion of delivery are different concepts.
 
-STOP, UNSUBSCRIBE, BERHENTI inbound events will revoke consent transactionally. A concurrent send already handed to Meta cannot be recalled. UI will explain this limitation.
+STOP, UNSUBSCRIBE, BERHENTI inbound events revoke consent transactionally. A concurrent send already handed to Meta cannot be recalled. UI explains this limitation.
 
 ## Route plan
 | UI | API | Phase |
@@ -36,7 +36,7 @@ STOP, UNSUBSCRIBE, BERHENTI inbound events will revoke consent transactionally. 
 | /contacts | /api/contacts, /api/tags, /api/imports | 2 |
 | /templates | /api/templates, /api/templates/sync | 3 |
 | /campaigns (draft dialog) | /api/campaigns, /api/campaigns/:id, /api/campaigns/preview | 3 |
-| /campaigns/:id | /api/campaigns/:id/{launch,pause,resume,cancel} | 4 |
+| /campaigns (review/monitor dialogs) | /api/campaigns/:id/{review,delivery,launch,test,pause,resume,cancel} | 4 |
 | /analytics | /api/analytics, /api/exports | 5 |
 | provider only | /api/webhooks/whatsapp | 4 |
 
@@ -78,3 +78,15 @@ Netlify Database requires a credit-based plan. Async Workloads requires enabling
 - Text header/body positional and named placeholders are scoped by component. Footer is static; common static buttons are display-only. Unsupported media/dynamic/OTP/complex formats remain visible in the catalogue with reasons.
 - Production templates/drafts require admin or operator, synchronization requires admin, and viewer sees aggregate dashboard only. Same-origin, request size and existing persistent per-actor rate guards apply.
 - Draft creation uses a client UUID so an uncertain response can be reconciled by reopening the existing draft rather than generating a new one. A repeated create cannot overwrite an existing record.
+
+## Phase 4 implementation decisions
+- Launch review binds draft version, fresh template, frozen parameters and contact versions to a confirmation hash. Launch atomically creates unique recipients and one outbox intent per campaign. Test sends use a separate child campaign and client-generated idempotency ID.
+- A production scheduler publishes due outbox rows through the official Async Workloads SDK. Generation and lease checks prevent stale publisher acknowledgements from erasing newly requested work. The authenticated workload wrapper rejects direct unauthenticated requests.
+- One database lease serializes sending across the workspace. Every provider request follows a durable dispatching marker; an expired dispatch claim becomes uncertain. Explicit rate-limit rejections alone can retry, with a global Retry-After delay and five-attempt cap.
+- Worker checks current consent, suppression, archive, sender/account and template before every recipient. Parameters remain the launch snapshot. Template cache expiry or provider quality/authentication errors pause work.
+- Raw-body HMAC authenticates webhook POSTs before parsing/storage. WABA and phone identity scope events. Deduplicated status evidence can arrive before the response ID; reconciliation preserves read/delivered evidence against older events. Missing response IDs may remain unmatched.
+- Suppressions preserve opt-outs for unknown numbers. New consent must postdate opt-out evidence. Exact STOP/UNSUBSCRIBE/BERHENTI messages are processed; this is not an inbox.
+- Local simulation uses the same delivery services with a deterministic adapter and explicit manual batch/event controls. No Meta request or autonomous demo scheduler runs.
+- Migration 0004 adds delivery_control and contact_suppressions plus account/sender snapshots and outbox lease/generation fields. No changes to prior migration contents.
+
+Operational setup: PHASE-4-GUIDE-ID.md. Verification and remaining limits: IMPLEMENTATION-REPORT.md.
