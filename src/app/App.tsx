@@ -14,7 +14,7 @@ const icons = [LayoutDashboard, Users, Send, FileText, ChartNoAxesCombined, Sett
 const bootstrap = import.meta.env.DEV && !location.hash ? Promise.resolve(null) : handleAuthCallback();
 export default function App() {
   const [user, setUser] = useState<Session | null>(null);
-  const [demo, setDemo] = useState(false);
+  const [demo, setDemo] = useState(true);
   const [ready, setReady] = useState(false);
   const [mode, setMode] = useState<'login' | 'invite' | 'recovery'>('login');
   const [token, setToken] = useState<string>();
@@ -34,7 +34,13 @@ export default function App() {
       if (!active) return;
       if (result?.type === 'invite') { setToken(result.token); setMode('invite'); }
       else if (result?.type === 'recovery') setMode('recovery');
-      else if (await getUser()) { const session = await api<Session>('session'); if (active) setUser(session); }
+      else {
+        try {
+          if (await getUser()) { const session = await api<Session>('session'); if (active) { setUser(session); setDemo(false); } }
+        } catch {
+          // Netlify Identity unavailable in AI Studio, continue with local demo mode
+        }
+      }
     }).catch(() => { if (active) setError(id.authError); }).finally(() => { if (active) setReady(true); });
     const back = () => setPath(location.pathname); window.addEventListener('popstate', back);
     return () => { active = false; window.removeEventListener('popstate', back); };

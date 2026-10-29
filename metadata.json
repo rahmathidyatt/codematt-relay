@@ -1,0 +1,7 @@
+{
+  "name": "codematt Relay",
+  "description": "Send clearly. Reach responsibly. WhatsApp campaign queue, scheduling and delivery management.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -14,7 +14,17 @@ export function Auth({ mode, token, onDone, onDemo }: { mode: 'login' | 'invite'
         if (!token) throw new Error('Missing invitation');
         await acceptInvite(token, password);
       } else if (mode === 'recovery') await updateUser({ password });
-      else await login(String(data.get('email')), password);
+      else {
+        try {
+          await login(String(data.get('email')), password);
+        } catch (e) {
+          if (onDemo) {
+            onDemo();
+            return;
+          }
+          throw e;
+        }
+      }
       await onDone();
     } catch { setError(id.authError); }
     finally { setBusy(false); }
